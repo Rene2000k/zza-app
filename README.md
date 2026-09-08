@@ -1,4 +1,4 @@
-# zza-display
+﻿# zza-display
 
 A recreation of a German railway departure display — the *Zugzielanzeiger* (ZZA) found on DB
 platforms — as a React app, driven by real-time departure data.
@@ -14,7 +14,7 @@ what size, and in what visual style.
 That separation is the point of the project. Adding another display generation should mean adding a
 design, not touching the data layer.
 
-The first design being built is **V4 5X2**. Others are meant to follow.
+The first design being built is **V3 5X2**. Others are meant to follow.
 
 A display instance is configured by at least **station** and **platform**, so it can reproduce what a
 specific platform's own display would show.
