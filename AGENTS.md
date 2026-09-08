@@ -37,7 +37,10 @@ component — always go through the domain model.
   type, one component, one fix). No commit mixes multiple unrelated changes or bundles pure
   formatting with functional changes.
 - Commit messages explain **why**, not just what; imperative mood, short subject line (≤ 72
-  characters), body with context when needed.
+  characters).
+- **Keep them short: a subject line plus one or two explanatory sentences.** No wall of text, no
+  section headings, no bullet lists, no restating the diff. If the reasoning needs more room than
+  that, it belongs in an ADR — and the commit message just names the decision and points at it.
 - **Corrections are folded in via amend as long as the affected commit is still local/unpublished**
   (i.e. not yet pushed, or not yet part of an open PR that others are already reviewing): instead of
   a separate "fix typo" / "address review comment" commit, the original commit is corrected with
