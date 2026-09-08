@@ -1,0 +1,47 @@
+# Internal working material — planning documents stay local and are not published.
+# ADRs in docs/adr/ carry the decisions that come out of them, self-contained.
+docs/plan/
+
+# Reference screenshots of third-party displays, collected for design analysis.
+docs/reference/
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+dist-ssr/
+build/
+*.local
+
+# Test and tooling output
+coverage/
+.vite/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
