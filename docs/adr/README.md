@@ -9,6 +9,7 @@ only covers the mechanics.
 | # | Title | Status |
 |---|-------|--------|
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions in ADRs | accepted |
+| [0002](0002-use-iris-as-primary-departure-data-source.md) | Use IRIS as the primary departure data source | accepted |
 
 Keep this table in sync in the same commit that adds an ADR. Newest entries at the bottom.
 
