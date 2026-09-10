@@ -3,9 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClockContext } from './ClockContext';
 import { SmokeBoard } from './SmokeBoard';
 import { parseConfig } from './config';
-import { acceleratedClock, fixedClock, systemClock } from '@/platform/clock';
-import type { Clock } from '@/platform/clock';
-import type { DisplayConfig } from './config';
+import { useConfiguredClock } from '@/hooks/useClock';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +22,8 @@ export const App = () => {
     () => parseConfig(window.location.search === '' ? fallbackSearch : window.location.search),
     [],
   );
+  // Called before the early return so the hook order stays the same on every render.
+  const clock = useConfiguredClock(result.ok ? result.config : undefined);
 
   if (!result.ok) {
     return (
@@ -42,7 +42,7 @@ export const App = () => {
   }
 
   return (
-    <ClockContext.Provider value={clockFor(result.config)}>
+    <ClockContext.Provider value={clock}>
       <QueryClientProvider client={queryClient}>
         <main>
           <SmokeBoard config={result.config} />
@@ -50,14 +50,4 @@ export const App = () => {
       </QueryClientProvider>
     </ClockContext.Provider>
   );
-};
-
-/**
- * Builds the clock the configuration asks for (ADR-0004): real time, a frozen
- * instant, or an accelerated run starting at that instant.
- */
-const clockFor = (config: DisplayConfig): Clock => {
-  if (config.simulatedTime === undefined) return systemClock;
-  const start = new Date(config.simulatedTime);
-  return config.timeFactor === undefined ? fixedClock(start) : acceleratedClock(start, config.timeFactor);
 };
