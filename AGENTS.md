@@ -33,6 +33,10 @@ component — always go through the domain model.
 
 ## Commit Rules
 
+- **Implementation and commit are separate steps. Do not commit work in the same pass that produced
+  it.** Finish the change, report what was done, and leave it in the working tree for the maintainer
+  to review. Committing happens afterwards — on request, or by the maintainer. Review usually leads
+  to adjustments, and those belong in the change itself rather than in a follow-up commit.
 - **Atomic commits.** Each commit contains exactly one logical, self-contained change (e.g. one
   type, one component, one fix). No commit mixes multiple unrelated changes or bundles pure
   formatting with functional changes.
@@ -41,12 +45,16 @@ component — always go through the domain model.
 - **Keep them short: a subject line plus one or two explanatory sentences.** No wall of text, no
   section headings, no bullet lists, no restating the diff. If the reasoning needs more room than
   that, it belongs in an ADR — and the commit message just names the decision and points at it.
-- **Corrections are folded in via amend as long as the affected commit is still local/unpublished**
-  (i.e. not yet pushed, or not yet part of an open PR that others are already reviewing): instead of
-  a separate "fix typo" / "address review comment" commit, the original commit is corrected with
-  `git commit --amend`, keeping history atomic and easy to follow.
-  - Exception: if the commit has already been pushed and is referenced/reviewed by others, the
-    correction is added as a new, separate commit instead of rewriting published history.
+- **History shows reviewed, approved states — never the back-and-forth that produced them.** A commit
+  is what a feature looked like when it was agreed, not a diary of attempts, fixes and reversals.
+- **Corrections are therefore always folded into the commit they belong to**, as long as that commit
+  is still local/unpublished (not pushed, and not part of an open PR others are reviewing):
+  - the commit is the last one → `git commit --amend`;
+  - the commit sits further back → **rebase** to fold the correction into it.
+  - Never a separate "fix typo", "address review comment" or revert commit on unpublished history, and
+    never a follow-up commit that removes something an earlier commit should not have contained.
+  - Exception: once a commit has been pushed and is referenced or reviewed by others, the correction
+    becomes a new, separate commit instead of rewriting published history.
 - No `--no-verify`, no skipped hooks, no rebase/amend on commits that are already merged.
 
 ## Architecture Decision Records (ADR)
@@ -71,8 +79,17 @@ A decision needs an ADR when **any** of these is true:
   source, the font, the polling interval derived from a measured rate limit. These are always ADRs,
   and they carry the measurements that led there, not just the verdict.
 
-Trivial and therefore ADR-free: locally reversible choices with no rejected alternative worth naming
-(variable names, the order of props, extracting a helper function, formatting).
+ADR-free, even when a choice was involved:
+
+- Trivial, locally reversible choices with no rejected alternative worth naming — variable names, the
+  order of props, extracting a helper function, formatting.
+- **Project housekeeping that does not shape the software**: which license the repository carries,
+  what the repository is called, which tool version is required because the tooling demands it. These
+  are decisions, but not *architecture* decisions — they belong in the file that carries them
+  (`LICENSE`, `package.json`, `.nvmrc`) and, where the reasoning matters, in a sentence there.
+
+The test is whether the decision constrains how the software is built or behaves. If it only
+constrains paperwork, it is not an ADR.
 
 **ADRs are self-contained and must not reference internal planning documents.** `docs/plan/` is
 internal working material and stays out of the ADRs — no links, no "see phase 2". Anything needed to
