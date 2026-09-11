@@ -12,6 +12,20 @@ import type { StationBoard } from '@/domain/board';
  */
 const STALE_AFTER_POLLS = 3;
 
+/** Each poll interval is varied by up to this fraction, in either direction. */
+const POLL_JITTER = 0.1;
+
+/**
+ * The next poll interval: the configured one, varied by up to ±10 %.
+ *
+ * Displays opened at the same moment would otherwise poll the source in lockstep for as
+ * long as they run. The value is drawn anew for every poll, so they drift apart.
+ */
+export const jitteredIntervalMs = (
+  refreshSeconds: number,
+  random: () => number = Math.random,
+): number => Math.round(refreshSeconds * 1000 * (1 + (random() * 2 - 1) * POLL_JITTER));
+
 /**
  * Fetches and refreshes the board for a configuration.
  *
@@ -46,9 +60,11 @@ export const useBoard = (config: DisplayConfig): BoardState => {
         },
         signal,
       ),
-    refetchInterval: config.refreshSeconds * 1000,
+    // A function, so TanStack Query asks again after every poll and the jitter is fresh.
+    refetchInterval: () => jitteredIntervalMs(config.refreshSeconds),
     // Keep showing the previous board while refetching and on failure.
     placeholderData: (previous) => previous,
+    // Backoff within a poll: TanStack Query retries after 1 s, then 2 s.
     retry: 2,
     staleTime: 0,
   });
