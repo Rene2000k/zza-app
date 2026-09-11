@@ -39,7 +39,11 @@ describe('smoke board', () => {
 
   it('marks a platform change', async () => {
     renderBoard();
-    expect(await screen.findByText(/geändert/)).toBeDefined();
+    // Two fixture entries change platform (ADR-0006); this checks the marker is on the
+    // one that moved onto platform 9, not just that the text occurs somewhere.
+    const row = (await screen.findByText('IC 2310')).closest('tr');
+    expect(row).not.toBeNull();
+    expect(row?.textContent).toMatch(/geändert/);
   });
 
   it('shows nothing for a delay cause the project cannot resolve', async () => {
@@ -54,5 +58,12 @@ describe('smoke board', () => {
     renderBoard({ platform: '12' });
     expect(await screen.findByText('RE 4168')).toBeDefined();
     expect(screen.queryByText('ICE 571')).toBeNull();
+  });
+
+  it('keeps an entry on the platform it left, not just the one it moved to (ADR-0006)', async () => {
+    renderBoard({ platform: '9' });
+    // RE 4271 was planned on 9 and moved to 4; platform 9's board must still announce it.
+    const row = (await screen.findByText('RE 4271')).closest('tr');
+    expect(row?.textContent).toMatch(/4.*\(geändert\)/);
   });
 });
