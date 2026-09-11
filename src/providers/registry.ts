@@ -1,15 +1,16 @@
 import type { DepartureProvider } from './types';
+import { createIrisProvider } from './iris';
 import { createMockProvider } from './mock';
 
 /**
  * Provider lookup by id.
  *
- * The real source (IRIS, ADR-0002) is added in the API-layer phase; until then the
- * mock is the only entry. The registry exists from the start so nothing above this
- * layer ever imports a provider directly.
+ * The registry exists from the start so nothing above this layer ever imports a
+ * provider directly.
  */
 const factories: Record<string, () => DepartureProvider> = {
   mock: createMockProvider,
+  iris: createIrisProvider,
 };
 
 export const providerIds = (): string[] => Object.keys(factories);
