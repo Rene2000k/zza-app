@@ -1,5 +1,5 @@
 import type { BoardMessage } from './message';
-import type { StationRef } from './station';
+import type { RouteStop } from './station';
 import type { TrainFormation } from './formation';
 import type { TrainRef } from './train';
 
@@ -27,17 +27,17 @@ interface BoardEntryBase {
 export interface DepartureEntry extends BoardEntryBase {
   readonly kind: 'departure';
   /** Where the train is headed — the last stop of its remaining route. */
-  readonly destination: StationRef;
+  readonly destination: RouteStop;
   /** Remaining stops after this station, in travel order, excluding the destination. */
-  readonly via: readonly StationRef[];
+  readonly via: readonly RouteStop[];
   /** Where the train came from, when known. Extra information, never the headline. */
-  readonly origin?: StationRef;
+  readonly origin?: RouteStop;
 }
 
 export interface TerminatingArrivalEntry extends BoardEntryBase {
   readonly kind: 'terminatingArrival';
   /** Where the train came from — the headline for a train that ends here. */
-  readonly origin: StationRef;
+  readonly origin: RouteStop;
 }
 
 /**
@@ -84,7 +84,7 @@ export type EntryStatus =
   | 'replacement';
 
 /** Where the train goes or came from, whichever this kind of entry leads with. */
-export const headlineStation = (entry: BoardEntry): StationRef =>
+export const headlineStation = (entry: BoardEntry): RouteStop =>
   entry.kind === 'departure' ? entry.destination : entry.origin;
 
 /** Sort key for the board: the time this entry is governed by. */

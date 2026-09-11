@@ -1,4 +1,4 @@
-import { dataAgeSeconds, relevantEntries } from '@/domain/board';
+import { dataAgeSeconds, isStale, relevantEntries } from '@/domain/board';
 import { delayMinutes, headlineStation } from '@/domain/boardEntry';
 import { displayableMessages } from '@/domain/message';
 import { formatTrainRef } from '@/domain/train';
@@ -16,7 +16,7 @@ import type { BoardEntry } from '@/domain/boardEntry';
  */
 export const SmokeBoard = ({ config }: { config: DisplayConfig }) => {
   const now = useNow();
-  const { board, isLoading, error, isRefreshing } = useBoard(config);
+  const { board, isLoading, error, isRefreshing, staleAfterSeconds } = useBoard(config);
 
   if (isLoading) return <p>Lade Abfahrten…</p>;
   if (board === undefined) return <p role="alert">Keine Daten: {error?.message ?? 'unbekannt'}</p>;
@@ -33,6 +33,7 @@ export const SmokeBoard = ({ config }: { config: DisplayConfig }) => {
         </h1>
         <p>
           <time>{formatTime(now)}</time> · Daten {age} s alt
+          {isStale(board, now, staleAfterSeconds) ? ' · veraltet' : ''}
           {isRefreshing ? ' · aktualisiert…' : ''}
           {error !== null ? ` · letzter Abruf fehlgeschlagen (${error.message})` : ''}
         </p>

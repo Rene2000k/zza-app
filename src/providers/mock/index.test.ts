@@ -11,13 +11,21 @@ describe('mock provider', () => {
     expect(board.fetchedAt).toBe(now);
   });
 
-  it('filters by the platform actually in use, not the planned one', async () => {
-    const board = await createMockProvider().getBoard({ station: '8000105', platform: '9', now });
-    // The IC moved from 7 to 9, so it belongs on the platform-9 board…
-    expect(board.entries.some((entry) => entry.id === 'mock-ic-2310')).toBe(true);
-    // …and must not appear on the board for its planned platform any more.
-    const planned = await createMockProvider().getBoard({ station: '8000105', platform: '7', now });
-    expect(planned.entries.some((entry) => entry.id === 'mock-ic-2310')).toBe(false);
+  it('keeps a platform-changed entry on both the old and the new platform (ADR-0006)', async () => {
+    const provider = createMockProvider();
+    // The IC moved from 7 to 9: shown where it now actually runs…
+    const nine = await provider.getBoard({ station: '8000105', platform: '9', now });
+    expect(nine.entries.some((entry) => entry.id === 'mock-ic-2310')).toBe(true);
+    // …and still announced on 7, the platform it left, carrying the new platform and the
+    // changed flag rather than disappearing as if the data had failed.
+    const seven = await provider.getBoard({ station: '8000105', platform: '7', now });
+    const onSeven = seven.entries.find((entry) => entry.id === 'mock-ic-2310');
+    expect(onSeven?.platform).toEqual({ planned: '7', actual: '9', changed: true });
+  });
+
+  it('excludes entries with no planned or actual claim on the requested platform', async () => {
+    const board = await createMockProvider().getBoard({ station: '8000105', platform: '12', now });
+    expect(board.entries.some((entry) => entry.id === 'mock-ic-2310')).toBe(false);
   });
 
   it('resolves stations by name, EVA number and operational code', async () => {

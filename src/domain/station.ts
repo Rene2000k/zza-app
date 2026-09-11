@@ -8,6 +8,20 @@ export interface StationRef {
   readonly ds100?: string;
 }
 
+/**
+ * A stop on a train's route — its destination, origin or a via stop — as the display
+ * names it.
+ *
+ * Unlike a `StationRef` it need not carry an EVA number: sources commonly report a route
+ * as names only (IRIS does), and a missing identifier has to stay visibly missing rather
+ * than be filled with something that merely looks like one.
+ */
+export interface RouteStop {
+  readonly name: string;
+  /** EVA number, only where the source reports one. */
+  readonly evaNumber?: string;
+}
+
 /** A station with the extra detail only a lookup provides. */
 export interface StationDetails extends StationRef {
   /**

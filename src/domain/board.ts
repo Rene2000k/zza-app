@@ -1,3 +1,4 @@
+import { isSamePlatform } from './station';
 import type { BoardEntry } from './boardEntry';
 import type { StationRef } from './station';
 
@@ -19,6 +20,14 @@ export const dataAgeSeconds = (board: StationBoard, now: Date): number =>
   Math.max(0, Math.round((now.getTime() - board.fetchedAt.getTime()) / 1000));
 
 /**
+ * True once the data is older than `staleAfterSeconds` — the point from which a display
+ * may say so instead of silently showing old departures. The threshold is the polling
+ * policy's to set, not the design's.
+ */
+export const isStale = (board: StationBoard, now: Date, staleAfterSeconds: number): boolean =>
+  dataAgeSeconds(board, now) > staleAfterSeconds;
+
+/**
  * Entries a display should still show: nothing that left more than
  * `keepPastMinutes` ago, and nothing further out than `horizonMinutes`.
  *
@@ -37,3 +46,20 @@ export const relevantEntries = (
     return at >= from && at <= to;
   });
 };
+
+/**
+ * Entries relevant to one platform's board: those actually running from it now, and
+ * those that were planned there and later moved elsewhere.
+ *
+ * A platform must keep announcing a train that left it — dropping the entry the moment
+ * it changes platform looks like a data failure, not a deliberate change (ADR-0006).
+ */
+export const entriesForPlatform = (
+  entries: readonly BoardEntry[],
+  platform: string,
+): BoardEntry[] =>
+  entries.filter(
+    (entry) =>
+      isSamePlatform(entry.platform.actual, platform) ||
+      isSamePlatform(entry.platform.planned, platform),
+  );

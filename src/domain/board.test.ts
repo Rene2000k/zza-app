@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataAgeSeconds, relevantEntries } from './board';
+import { dataAgeSeconds, entriesForPlatform, isStale, relevantEntries } from './board';
 import { headlineStation, sortByTime } from './boardEntry';
 import type { StationBoard } from './board';
 import type { BoardEntry } from './boardEntry';
@@ -76,5 +76,48 @@ describe('board selection', () => {
     expect(dataAgeSeconds(board, new Date(reference.getTime() + 45_000))).toBe(45);
     // A board from the future must not report a negative age.
     expect(dataAgeSeconds(board, new Date(reference.getTime() - 5_000))).toBe(0);
+  });
+});
+
+describe('entriesForPlatform (ADR-0006)', () => {
+  const onPlatform = (planned: string, actual: string, changed: boolean): BoardEntry => ({
+    ...departure('e', 4),
+    platform: { planned, actual, changed },
+  });
+
+  it('keeps an entry that is currently at the requested platform', () => {
+    const entry = onPlatform('9', '9', false);
+    expect(entriesForPlatform([entry], '9')).toEqual([entry]);
+  });
+
+  it('keeps an entry that was planned here and later moved elsewhere', () => {
+    const entry = onPlatform('9', '4', true);
+    expect(entriesForPlatform([entry], '9')).toEqual([entry]);
+  });
+
+  it('keeps an entry that moved to the requested platform from elsewhere', () => {
+    const entry = onPlatform('7', '9', true);
+    expect(entriesForPlatform([entry], '9')).toEqual([entry]);
+  });
+
+  it('excludes an entry with no planned or actual claim on the platform', () => {
+    const entry = onPlatform('7', '4', true);
+    expect(entriesForPlatform([entry], '9')).toEqual([]);
+  });
+});
+
+describe('isStale', () => {
+  const board: StationBoard = {
+    station: { evaNumber: '8000105', name: 'Frankfurt(Main)Hbf' },
+    entries: [],
+    fetchedAt: reference,
+  };
+
+  it('is not stale up to and including the threshold', () => {
+    expect(isStale(board, new Date(reference.getTime() + 90_000), 90)).toBe(false);
+  });
+
+  it('is stale once the data is older than the threshold', () => {
+    expect(isStale(board, new Date(reference.getTime() + 91_000), 90)).toBe(true);
   });
 });

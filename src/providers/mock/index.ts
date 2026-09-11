@@ -1,5 +1,5 @@
 import { sortByTime } from '@/domain/boardEntry';
-import { isSamePlatform } from '@/domain/station';
+import { entriesForPlatform } from '@/domain/board';
 import type { StationBoard } from '@/domain/board';
 import type { StationDetails } from '@/domain/station';
 import type { BoardRequest, DepartureProvider } from '@/providers/types';
@@ -46,9 +46,7 @@ export const createMockProvider = (): DepartureProvider => ({
     }
 
     const all = mockEntries(request.now);
-    const entries = request.platform
-      ? all.filter((entry) => isSamePlatform(entry.platform.actual, request.platform))
-      : all;
+    const entries = request.platform ? entriesForPlatform(all, request.platform) : all;
 
     const board: StationBoard = {
       station: {

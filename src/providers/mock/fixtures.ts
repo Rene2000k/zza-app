@@ -103,6 +103,21 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
       via: [{ evaNumber: '8000149', name: 'Fulda' }, { evaNumber: '8000191', name: 'Kassel-Wilhelmshöhe' }],
     },
     {
+      // Left platform 9 for platform 4 (ADR-0006): the platform-9 board must still show
+      // it, marked as changed, not drop it as if it never existed. Where it is placed on
+      // the display ("Folgezüge" with a Gleis-4 hint) is the display layer's concern; the
+      // domain model only has to keep the data.
+      kind: 'departure',
+      id: 'mock-re-4271',
+      train: { category: 'RE', number: '4271', line: 'RE59', operator: '80' },
+      platform: { planned: '9', actual: '4', changed: true },
+      time: at(19, 3),
+      status: 'delayed',
+      messages: [{ kind: 'info', code: '900', text: 'Gleiswechsel' }],
+      destination: { evaNumber: '8000068', name: 'Gießen' },
+      via: [{ evaNumber: '8000760', name: 'Bad Vilbel' }],
+    },
+    {
       // Ends here (ADR-0003): origin instead of destination, no via stops.
       kind: 'terminatingArrival',
       id: 'mock-rb-15645',
