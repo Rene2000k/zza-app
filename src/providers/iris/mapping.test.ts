@@ -229,7 +229,8 @@ describe('mapBoardEntries: terminating and originating stops (real Frankfurt fra
     expect(terminating).toBeDefined();
     if (terminating === undefined) return;
     expect(terminating.train).toEqual({ category: 'RE', number: '4263', line: 'RE2', operator: '800640' });
-    expect(terminating.origin.name).toBe('Koblenz Hbf');
+    // Route stops carry no EVA number: IRIS names them only.
+    expect(terminating.origin).toEqual({ name: 'Koblenz Hbf' });
     expect(terminating.time.planned).toEqual(new Date('2026-09-10T14:51:00Z'));
   });
 
@@ -247,7 +248,7 @@ describe('mapBoardEntries: terminating and originating stops (real Frankfurt fra
     const departure = asDeparture(entry);
     expect(departure).toBeDefined();
     if (departure === undefined) return;
-    expect(departure.destination.name).toBe('Kelsterbach');
+    expect(departure.destination).toEqual({ name: 'Kelsterbach' });
     expect(departure.via.map((s) => s.name)).toEqual([
       'Frankfurt-Niederrad',
       'Frankfurt am Main - Stadion',

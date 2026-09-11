@@ -1,8 +1,8 @@
-import type { StationRef } from './station';
+import type { RouteStop } from './station';
 
 /** What to render for a via line, and how much was left out. */
 export interface ViaSelection {
-  readonly stops: readonly StationRef[];
+  readonly stops: readonly RouteStop[];
   readonly omittedCount: number;
 }
 
@@ -15,7 +15,7 @@ export interface ViaSelection {
  * `maxStops` is a parameter, not a constant: a design with more room asks for more, with
  * no change to how the data was mapped in the first place.
  */
-export const selectViaStops = (via: readonly StationRef[], maxStops: number): ViaSelection => {
+export const selectViaStops = (via: readonly RouteStop[], maxStops: number): ViaSelection => {
   if (via.length <= maxStops) {
     return { stops: via, omittedCount: 0 };
   }

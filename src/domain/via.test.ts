@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { selectViaStops } from './via';
-import type { StationRef } from './station';
+import type { RouteStop } from './station';
 
-const stop = (name: string): StationRef => ({ evaNumber: name, name });
-const stops = (...names: string[]): StationRef[] => names.map(stop);
+const stop = (name: string): RouteStop => ({ name });
+const stops = (...names: string[]): RouteStop[] => names.map(stop);
 
 describe('selectViaStops (ADR-0005)', () => {
   it('keeps everything when the list already fits', () => {

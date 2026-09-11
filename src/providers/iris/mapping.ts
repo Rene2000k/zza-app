@@ -3,7 +3,7 @@ import { resolveDelayCause } from './messageCodes';
 import { isDelayed } from '@/domain/boardEntry';
 import type { BoardEntry, DepartureEntry, EntryStatus, EntryTime, PlatformInfo, TerminatingArrivalEntry } from '@/domain/boardEntry';
 import type { BoardMessage, MessageKind } from '@/domain/message';
-import type { StationDetails, StationRef } from '@/domain/station';
+import type { RouteStop, StationDetails } from '@/domain/station';
 import type { TrainRef } from '@/domain/train';
 
 /**
@@ -17,10 +17,9 @@ import type { TrainRef } from '@/domain/train';
  *   wiped) falls back to the planned path, so a cancelled train still shows where it was
  *   headed instead of a blank destination.
  * - IRIS's via/destination/origin path (`ppth`/`cpth`) is a list of station *names*
- *   only, never EVA numbers — resolving a real EVA per stop would need one lookup per
- *   name, which the source gives no reason to justify. `StationRef.evaNumber` for a
- *   via/destination/origin station is therefore the name itself, not a real EVA. Only
- *   the board's own station (known from the request) carries a genuine one.
+ *   only, never EVA numbers — resolving each would cost one lookup per name. These
+ *   stops are therefore `RouteStop`s without an EVA number; only the board's
+ *   own station carries one.
  */
 
 const children = (el: Element, tag: string): Element[] =>
@@ -28,7 +27,7 @@ const children = (el: Element, tag: string): Element[] =>
 
 const child = (el: Element, tag: string): Element | undefined => children(el, tag)[0];
 
-const nameOnlyStation = (name: string): StationRef => ({ evaNumber: name, name });
+const routeStop = (name: string): RouteStop => ({ name });
 
 const preferChanged = (planned: Element, changed: Element | undefined, attr: string): string | undefined =>
   changed?.getAttribute(attr) ?? planned.getAttribute(attr) ?? undefined;
@@ -178,8 +177,8 @@ const mapDeparture = (
     time,
     status,
     messages,
-    destination: nameOnlyStation(destinationName),
-    via: pathNames.slice(0, -1).map(nameOnlyStation),
+    destination: routeStop(destinationName),
+    via: pathNames.slice(0, -1).map(routeStop),
   };
 };
 
@@ -208,7 +207,7 @@ const mapTerminating = (
     time,
     status,
     messages,
-    origin: nameOnlyStation(originName),
+    origin: routeStop(originName),
   };
 };
 
