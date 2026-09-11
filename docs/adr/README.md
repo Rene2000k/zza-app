@@ -12,6 +12,7 @@ only covers the mechanics.
 | [0002](0002-use-iris-as-primary-departure-data-source.md) | Use IRIS as the primary departure data source | accepted |
 | [0003](0003-terminating-trains-share-the-departure-board.md) | Terminating trains share the departure board | accepted |
 | [0004](0004-all-time-flows-through-a-clock-port.md) | All time flows through a clock port | accepted |
+| [0005](0005-via-line-shows-a-fixed-count-subset.md) | Via line shows a fixed-count subset, kept full in the domain model | accepted |
 
 Keep this table in sync in the same commit that adds an ADR. Newest entries at the bottom.
 
