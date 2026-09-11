@@ -20,6 +20,14 @@ export const dataAgeSeconds = (board: StationBoard, now: Date): number =>
   Math.max(0, Math.round((now.getTime() - board.fetchedAt.getTime()) / 1000));
 
 /**
+ * True once the data is older than `staleAfterSeconds` — the point from which a display
+ * may say so instead of silently showing old departures. The threshold is the polling
+ * policy's to set, not the design's.
+ */
+export const isStale = (board: StationBoard, now: Date, staleAfterSeconds: number): boolean =>
+  dataAgeSeconds(board, now) > staleAfterSeconds;
+
+/**
  * Entries a display should still show: nothing that left more than
  * `keepPastMinutes` ago, and nothing further out than `horizonMinutes`.
  *

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dataAgeSeconds, entriesForPlatform, relevantEntries } from './board';
+import { dataAgeSeconds, entriesForPlatform, isStale, relevantEntries } from './board';
 import { headlineStation, sortByTime } from './boardEntry';
 import type { StationBoard } from './board';
 import type { BoardEntry } from './boardEntry';
@@ -103,5 +103,21 @@ describe('entriesForPlatform (ADR-0006)', () => {
   it('excludes an entry with no planned or actual claim on the platform', () => {
     const entry = onPlatform('7', '4', true);
     expect(entriesForPlatform([entry], '9')).toEqual([]);
+  });
+});
+
+describe('isStale', () => {
+  const board: StationBoard = {
+    station: { evaNumber: '8000105', name: 'Frankfurt(Main)Hbf' },
+    entries: [],
+    fetchedAt: reference,
+  };
+
+  it('is not stale up to and including the threshold', () => {
+    expect(isStale(board, new Date(reference.getTime() + 90_000), 90)).toBe(false);
+  });
+
+  it('is stale once the data is older than the threshold', () => {
+    expect(isStale(board, new Date(reference.getTime() + 91_000), 90)).toBe(true);
   });
 });

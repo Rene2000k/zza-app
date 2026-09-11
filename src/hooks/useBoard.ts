@@ -6,12 +6,19 @@ import type { DisplayConfig } from '@/app/config';
 import type { StationBoard } from '@/domain/board';
 
 /**
+ * Data counts as stale after this many poll intervals without a successful refresh. One
+ * missed poll is ordinary (a retry, jitter); two in a row mean the source is not
+ * answering, and a display may then say so.
+ */
+const STALE_AFTER_POLLS = 3;
+
+/**
  * Fetches and refreshes the board for a configuration.
  *
  * The failure policy is the display's, not the network's: the last good board stays
  * in place when a fetch fails, so a dropout shows slightly old data instead of an
- * empty screen. Callers decide when "slightly old" becomes worth saying out loud,
- * using `dataAgeSeconds`.
+ * empty screen. When "slightly old" becomes worth saying out loud is set here, as
+ * `staleAfterSeconds`; callers apply it with `isStale` against their own ticking time.
  */
 export interface BoardState {
   readonly board: StationBoard | undefined;
@@ -19,6 +26,8 @@ export interface BoardState {
   readonly error: Error | null;
   /** True while a refresh is in flight and previous data is still shown. */
   readonly isRefreshing: boolean;
+  /** Data older than this counts as stale (see `isStale`). */
+  readonly staleAfterSeconds: number;
 }
 
 export const useBoard = (config: DisplayConfig): BoardState => {
@@ -49,5 +58,6 @@ export const useBoard = (config: DisplayConfig): BoardState => {
     isLoading: query.isLoading,
     error: query.error,
     isRefreshing: query.isFetching && query.data !== undefined,
+    staleAfterSeconds: STALE_AFTER_POLLS * config.refreshSeconds,
   };
 };
