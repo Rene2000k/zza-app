@@ -1,0 +1,43 @@
+/*
+ * The gallery stands in for a design: it sets font and colours on each frame, the way a
+ * design does in its own scope, so the blocks show that they inherit their look.
+ */
+.section {
+  margin-block: 2rem;
+}
+
+.samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.sample {
+  margin: 0;
+}
+
+/* Stands in for a design's slot; the outline shows where a block clips. */
+.frame,
+.frameInverted {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 24px;
+  outline: 1px dashed #5a5a66;
+  --zza-formation-stroke: 2px;
+}
+
+.frame {
+  color: #e8e8e8;
+  background: #16161c;
+}
+
+.frameInverted {
+  color: #16161c;
+  background: #e8e8e8;
+}
+
+.caption {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: #9a9aa6;
+}
