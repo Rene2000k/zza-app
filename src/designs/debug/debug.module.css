@@ -1,0 +1,129 @@
+/*
+ * The debug design's own scope. A design defines its tokens here and sizes everything in the
+ * canvas pixels declared alongside it in index.ts — the app scales the result.
+ *
+ * The colours are chosen to be unmistakably not a replica.
+ */
+.screen {
+  width: 960px;
+  height: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #2b0b3a;
+  color: #7cff3f;
+  font-family: 'Courier New', ui-monospace, monospace;
+  font-size: 20px;
+  --zza-formation-stroke: 3px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 6px;
+  background: #7cff3f;
+  color: #2b0b3a;
+}
+
+.state {
+  margin: 0;
+  font-size: 32px;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 3px dashed #ff00d4;
+}
+
+.times {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.time {
+  font-size: 44px;
+}
+
+.delay {
+  padding: 0 4px;
+  background: #ff00d4;
+  color: #ffffff;
+}
+
+.train {
+  font-size: 24px;
+}
+
+.destination {
+  font-size: 40px;
+}
+
+/* Fixed height, so the rotating panel cannot shift the layout when it changes. */
+.panel {
+  height: 26px;
+  color: #ffe600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hint {
+  padding: 0 4px;
+  background: #ff2f2f;
+  color: #ffffff;
+}
+
+.hintHidden {
+  composes: hint;
+  visibility: hidden;
+}
+
+.formation {
+  display: block;
+  width: 220px;
+}
+
+.following {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  font-size: 16px;
+}
+
+.following li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.followingTime {
+  width: 60px;
+}
+
+.followingDelay {
+  width: 40px;
+  color: #ff00d4;
+}
+
+.followingRoute {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.foot {
+  padding: 2px 6px;
+  background: #7cff3f;
+  color: #2b0b3a;
+}

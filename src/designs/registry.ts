@@ -1,3 +1,4 @@
+import { debugDesign } from './debug';
 import type { ZzaDesign } from './types';
 
 /**
@@ -7,7 +8,7 @@ import type { ZzaDesign } from './types';
  * configuration and never imports one directly, so adding a design means adding an entry
  * here and touching nothing else.
  */
-const designs: readonly ZzaDesign[] = [];
+const designs: readonly ZzaDesign[] = [debugDesign];
 
 export const designIds = (): string[] => designs.map((design) => design.id);
 
