@@ -1,0 +1,54 @@
+/*
+ * Only what the shared blocks need for their mechanism. Colour and font come from the
+ * element a design places a block in, so a block looks like its surroundings instead of
+ * bringing a look of its own (ADR-0009).
+ */
+
+/* Running line: the field clips, the track carries the content and its seamless copy. */
+.marquee {
+  overflow: hidden;
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+/* Squeezed text: the field clips, the content keeps its natural width and is scaled. */
+.fitted {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.fittedContent {
+  display: inline-block;
+  transform-origin: left center;
+}
+
+/* Coach-position display: section letters above, the coach strip below. */
+.formation {
+  display: flex;
+  flex-direction: column;
+}
+
+.sections,
+.coaches {
+  display: flex;
+}
+
+.sections > *,
+.coach {
+  flex: 1;
+  text-align: center;
+}
+
+.coaches {
+  border: var(--zza-formation-stroke) solid currentColor;
+}
+
+.coach + .coach {
+  border-left: var(--zza-formation-stroke) solid currentColor;
+}

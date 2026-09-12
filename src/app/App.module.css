@@ -1,0 +1,9 @@
+/* The display fills the window; only the configuration error page reads like a document. */
+.display {
+  width: 100%;
+  height: 100%;
+}
+
+.problems {
+  padding: 1rem;
+}

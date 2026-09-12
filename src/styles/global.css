@@ -7,17 +7,14 @@
 }
 
 html,
-body {
+body,
+#root {
   margin: 0;
   padding: 0;
   height: 100%;
   background: #101014;
   color: #eee;
   font-family: system-ui, sans-serif;
-}
-
-main {
-  padding: 1rem;
 }
 
 table {

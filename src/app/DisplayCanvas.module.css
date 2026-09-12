@@ -1,0 +1,15 @@
+/* The surround of a real display is dark and takes no part in the picture. */
+.frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.canvas {
+  flex: none;
+  transform-origin: center center;
+}
