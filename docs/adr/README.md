@@ -6,17 +6,18 @@ only covers the mechanics.
 
 ## Index
 
-| # | Title | Status |
-|---|-------|--------|
-| [0001](0001-record-architecture-decisions.md) | Record architecture decisions in ADRs | accepted |
-| [0002](0002-use-iris-as-primary-departure-data-source.md) | Use IRIS as the primary departure data source | accepted |
-| [0003](0003-terminating-trains-share-the-departure-board.md) | Terminating trains share the departure board | accepted |
-| [0004](0004-all-time-flows-through-a-clock-port.md) | All time flows through a clock port | accepted |
-| [0005](0005-via-line-shows-a-fixed-count-subset.md) | Via line shows a fixed-count subset, kept full in the domain model | accepted |
-| [0006](0006-platform-filter-keeps-entries-that-changed-away.md) | A platform-filtered board keeps entries that changed away from that platform | accepted |
-| [0007](0007-parse-iris-xml-with-native-domparser.md) | Parse IRIS XML with the runtime's native DOMParser | accepted |
-| [0008](0008-plan-hours-with-look-back-and-cache.md) | Fetch plan hours with a fixed 120-minute look-back, cached per hour | accepted |
-| [0009](0009-shared-blocks-own-mechanism-designs-choose-wording.md) | Shared display blocks own mechanism, designs choose what is printed | accepted |
+| #                                                                  | Title                                                                            | Status   |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------- | -------- |
+| [0001](0001-record-architecture-decisions.md)                      | Record architecture decisions in ADRs                                            | accepted |
+| [0002](0002-use-iris-as-primary-departure-data-source.md)          | Use IRIS as the primary departure data source                                    | accepted |
+| [0003](0003-terminating-trains-share-the-departure-board.md)       | Terminating trains share the departure board                                     | accepted |
+| [0004](0004-all-time-flows-through-a-clock-port.md)                | All time flows through a clock port                                              | accepted |
+| [0005](0005-via-line-shows-a-fixed-count-subset.md)                | Via line shows a fixed-count subset, kept full in the domain model               | accepted |
+| [0006](0006-platform-filter-keeps-entries-that-changed-away.md)    | A platform-filtered board keeps entries that changed away from that platform     | accepted |
+| [0007](0007-parse-iris-xml-with-native-domparser.md)               | Parse IRIS XML with the runtime's native DOMParser                               | accepted |
+| [0008](0008-plan-hours-with-look-back-and-cache.md)                | Fetch plan hours with a fixed 120-minute look-back, cached per hour              | accepted |
+| [0009](0009-shared-blocks-own-mechanism-designs-choose-wording.md) | Shared display blocks own mechanism, designs choose what is printed              | accepted |
+| [0010](0010-draw-dot-matrix-displays-with-a-condensed-web-font.md) | Draw dot-matrix displays with a free condensed web font, not a reproduced matrix | accepted |
 
 Keep this table in sync in the same commit that adds an ADR. Newest entries at the bottom.
 
@@ -39,14 +40,14 @@ Keep this table in sync in the same commit that adds an ADR. Newest entries at t
 The template follows a MADR-style outline; keep the section names and their order so ADRs stay
 comparable:
 
-| Section | Holds |
-|---|---|
-| Metadata | Status, deciders, date |
-| Context and Problem Statement | The situation, the binding constraints, the question being decided |
-| Decision Drivers | The criteria, one per row, with IDs `D01…` — only criteria that actually separate the options |
-| Considered Options | Options with IDs `O01…`, plus one comparison table rating every option against every driver (**Pro** / **Con** / **Undec**) |
-| Decision Outcome | The recommendation (while `proposed`) or the decision (once `accepted`), the trade-off accepted, and a **Consequences** paragraph naming the failure mode and the fallback option |
-| Pros and Cons of the Options | One subsection per option: what it is, an assessment table over all drivers, and notes where the table is too coarse |
+| Section                       | Holds                                                                                                                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Metadata                      | Status, deciders, date                                                                                                                                                            |
+| Context and Problem Statement | The situation, the binding constraints, the question being decided                                                                                                                |
+| Decision Drivers              | The criteria, one per row, with IDs `D01…` — only criteria that actually separate the options                                                                                     |
+| Considered Options            | Options with IDs `O01…`, plus one comparison table rating every option against every driver (**Pro** / **Con** / **Undec**)                                                       |
+| Decision Outcome              | The recommendation (while `proposed`) or the decision (once `accepted`), the trade-off accepted, and a **Consequences** paragraph naming the failure mode and the fallback option |
+| Pros and Cons of the Options  | One subsection per option: what it is, an assessment table over all drivers, and notes where the table is too coarse                                                              |
 
 Driver and option IDs are local to one ADR — `D01` in ADR-0004 has nothing to do with `D01` in
 ADR-0007.
