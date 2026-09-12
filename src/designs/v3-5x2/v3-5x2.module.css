@@ -1,0 +1,218 @@
+/*
+ * V3 5X2 on its 1272 × 417 canvas. Every position is a measured dot of the original, converted
+ * at 2.625 px across and 3 px down; the derivation and the band tables are in layout.md.
+ */
+.display {
+  --v3-lit: #0c30a8;
+  --v3-ink: #eeeeee;
+  --v3-unlit: #0b0a45;
+  /* Cap height per em of the typeface. Type below is given as cap height (ADR-0010). */
+  --v3-cap: 0.711;
+  --zza-formation-stroke: 3px;
+
+  position: relative;
+  width: 1272px;
+  height: 417px;
+  overflow: hidden;
+  background: var(--v3-lit);
+  color: var(--v3-ink);
+  font-family: 'Roboto Condensed', sans-serif;
+  font-weight: 400;
+  /* Room below the baseline, so squeezed and running fields do not clip descenders. */
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* A field is a fixed box: its text sits vertically centred and cannot widen it. */
+.field {
+  position: absolute;
+  display: flex;
+  align-items: center;
+}
+
+.field > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Inversion is the display's only emphasis, and a field with nothing to say shows none. */
+.invertible[data-inverted='true'] {
+  background: var(--v3-ink);
+  color: var(--v3-lit);
+}
+
+.cap7 {
+  font-size: calc(21px / var(--v3-cap));
+}
+
+.cap10 {
+  font-size: calc(30px / var(--v3-cap));
+}
+
+.cap14 {
+  font-size: calc(42px / var(--v3-cap));
+}
+
+.cap17 {
+  font-size: calc(51px / var(--v3-cap));
+}
+
+.cap21 {
+  font-size: calc(63px / var(--v3-cap));
+}
+
+.cap42 {
+  font-size: calc(126px / var(--v3-cap));
+}
+
+/* Upper module row — module 1: time, train, coach position. */
+
+.time {
+  composes: field cap17;
+  left: 0;
+  top: 0;
+  width: 252px;
+  height: 72px;
+  padding-left: 10.5px;
+}
+
+.train {
+  composes: field cap10;
+  left: 0;
+  top: 72px;
+  width: 252px;
+  height: 48px;
+  padding-left: 10.5px;
+}
+
+.formation {
+  composes: cap7;
+  position: absolute;
+  left: 10.5px;
+  top: 120px;
+  width: 204.75px;
+  height: 72px;
+}
+
+/* Upper module row — modules 2 to 4: running line, via stops, destination. */
+
+.mainHint {
+  composes: field invertible cap10;
+  left: 255px;
+  top: 0;
+  width: 762px;
+  height: 48px;
+}
+
+.via {
+  composes: field cap10;
+  left: 257.625px;
+  top: 48px;
+  width: 759.375px;
+  height: 48px;
+}
+
+.destination {
+  composes: field cap21;
+  left: 257.625px;
+  top: 96px;
+  width: 759.375px;
+  height: 96px;
+  /* Lifts the cap top to dot 36 as measured and keeps descenders clear of the gap. */
+  padding-bottom: 9px;
+}
+
+/* Upper module row — module 5: platform. */
+
+.platform {
+  composes: field cap42;
+  left: 1020px;
+  top: 0;
+  width: 252px;
+  height: 144px;
+  justify-content: flex-end;
+  padding-right: 18.375px;
+}
+
+/* Lower module row: a label and two following trains. There is no footer line. */
+
+.followingLabel {
+  composes: field cap10;
+  left: 0;
+  top: 225px;
+  width: 252px;
+  height: 48px;
+  padding-left: 7.875px;
+}
+
+.following {
+  position: absolute;
+  left: 0;
+  width: 1272px;
+  height: 72px;
+}
+
+.followingFirst {
+  composes: following;
+  top: 273px;
+}
+
+.followingSecond {
+  composes: following;
+  top: 345px;
+}
+
+.followingTime {
+  composes: field cap14;
+  left: 0;
+  top: 0;
+  width: 147px;
+  height: 72px;
+  padding-left: 7.875px;
+}
+
+.followingDeviation {
+  composes: field invertible cap10;
+  left: 147px;
+  top: 12px;
+  width: 105px;
+  height: 48px;
+  justify-content: center;
+}
+
+.followingTrain {
+  composes: field cap10;
+  left: 257.625px;
+  top: 0;
+  width: 249.375px;
+  height: 72px;
+}
+
+.followingDestination {
+  composes: field cap14;
+  left: 512.625px;
+  top: 0;
+  width: 504.375px;
+  height: 72px;
+}
+
+.followingHint {
+  composes: field invertible cap10;
+  left: 1020px;
+  top: 12px;
+  width: 252px;
+  height: 48px;
+}
+
+/*
+ * The seams between modules and the gap between the module rows, laid over everything: on the
+ * hardware they are housing, so text that crosses them is interrupted.
+ */
+.seams {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(to right, transparent 0 252px, var(--v3-unlit) 252px 255px),
+    linear-gradient(to bottom, transparent 0 192px, var(--v3-unlit) 192px 225px, transparent 225px);
+}

@@ -1,0 +1,212 @@
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { V3_5x2 } from './V3_5x2';
+import type { DepartureEntry, EntryTime, TerminatingArrivalEntry } from '@/domain/boardEntry';
+import type { ReadyBoard, ZzaBoardViewModel } from '@/hooks/useZzaBoard';
+
+const at = (minutes: number, delay = 0): EntryTime => {
+  // 08:00 UTC is 10:00 at the station.
+  const planned = new Date(Date.UTC(2026, 8, 11, 8, minutes));
+  return { planned, expected: new Date(planned.getTime() + delay * 60_000) };
+};
+
+const departure = (overrides: Partial<DepartureEntry> & { id: string }): DepartureEntry => ({
+  kind: 'departure',
+  train: { category: 'ICE', number: '571' },
+  platform: { planned: '9', actual: '9', changed: false },
+  time: at(4),
+  status: 'onTime',
+  messages: [],
+  destination: { name: 'Stuttgart Hbf' },
+  via: [],
+  ...overrides,
+});
+
+const terminating: TerminatingArrivalEntry = {
+  kind: 'terminatingArrival',
+  id: 'rb-15645',
+  train: { category: 'RB', number: '15645', line: 'RB61' },
+  platform: { planned: '9', actual: '9', changed: false },
+  time: at(8),
+  status: 'onTime',
+  messages: [],
+  origin: { name: 'Dieburg' },
+};
+
+const ready = (overrides: Partial<ReadyBoard>): ReadyBoard => ({
+  state: 'ready',
+  station: { evaNumber: '8000105', name: 'Frankfurt(Main)Hbf' },
+  platform: '9',
+  current: undefined,
+  following: [],
+  messages: [],
+  dataAgeSeconds: 4,
+  stale: false,
+  ...overrides,
+});
+
+const show = (board: ZzaBoardViewModel) => render(<V3_5x2 board={board} />).container;
+
+const invertedFields = (container: HTMLElement) =>
+  container.querySelectorAll('[data-inverted="true"]');
+
+const delayedBy = (minutes: number) =>
+  ready({ current: departure({ id: 'late', time: at(9, minutes), status: 'delayed' }) });
+
+describe('V3 5X2 design', () => {
+  it('shows the main train with its planned time, train and destination', () => {
+    show(ready({ current: departure({ id: 'ice' }) }));
+    expect(screen.getByText('10:04')).toBeDefined();
+    expect(screen.getByText('ICE 571')).toBeDefined();
+    expect(screen.getByText('Stuttgart Hbf')).toBeDefined();
+  });
+
+  it('shows the next three via stops in travel order', () => {
+    const via = ['Bad Vilbel', 'Friedberg', 'Butzbach', 'Bad Nauheim', 'Gießen Oswaldsgarten'];
+    show(ready({ current: departure({ id: 're', via: via.map((name) => ({ name })) }) }));
+    expect(screen.getByText('Bad Vilbel - Friedberg - Butzbach')).toBeDefined();
+  });
+
+  it('words the main train delay in the running line and gives following trains a +7 field', () => {
+    const container = show(
+      ready({
+        current: departure({ id: 'late', time: at(9, 12), status: 'delayed' }),
+        following: [departure({ id: 'later', time: at(20, 7), status: 'delayed' })],
+      }),
+    );
+    expect(screen.getByText('Verspätung ca. 10 Min.')).toBeDefined();
+    expect(screen.queryByText('+12')).toBeNull();
+    expect(screen.getByText('+7').getAttribute('data-inverted')).toBe('true');
+    expect(invertedFields(container)).toHaveLength(2);
+  });
+
+  it('rounds the announced delay down to five minutes and says nothing below five', () => {
+    const { container, rerender } = render(<V3_5x2 board={delayedBy(14)} />);
+    expect(screen.getByText('Verspätung ca. 10 Min.')).toBeDefined();
+
+    rerender(<V3_5x2 board={delayedBy(5)} />);
+    expect(screen.getByText('Verspätung ca. 5 Min.')).toBeDefined();
+
+    rerender(<V3_5x2 board={delayedBy(4)} />);
+    expect(screen.queryByText(/Verspätung/)).toBeNull();
+    expect(invertedFields(container)).toHaveLength(0);
+  });
+
+  it('leaves delay causes and disruption reports out of the running line', () => {
+    const container = show(
+      ready({
+        current: departure({ id: 'x', time: at(9, 3), status: 'delayed' }),
+        messages: [
+          { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
+          { kind: 'disruption', text: 'Störung' },
+        ],
+      }),
+    );
+    expect(screen.queryByText(/vorausfahrenden/)).toBeNull();
+    expect(screen.queryByText(/Störung/)).toBeNull();
+    expect(invertedFields(container)).toHaveLength(0);
+  });
+
+  it('draws no white bar where there is nothing to say', () => {
+    const container = show(ready({ current: departure({ id: 'quiet' }) }));
+    expect(invertedFields(container)).toHaveLength(0);
+  });
+
+  it('runs every notice for the main train in one line, separated and closed by +++', () => {
+    show(
+      ready({
+        current: departure({
+          id: 'x',
+          time: at(9, 10),
+          status: 'delayed',
+          platform: { planned: '9', actual: '4', changed: true },
+        }),
+      }),
+    );
+    const line = screen.getByText('Verspätung ca. 10 Min. +++ Heute von Gleis 4 +++');
+    expect(line.closest('[data-inverted]')?.getAttribute('data-inverted')).toBe('true');
+  });
+
+  it('does not announce a cancellation twice when the source already words it', () => {
+    show(
+      ready({
+        current: departure({ id: 'x', status: 'cancelled' }),
+        messages: [{ kind: 'cancellation', code: '80', text: 'Zug fällt aus' }],
+      }),
+    );
+    expect(screen.getByText('Zug fällt aus')).toBeDefined();
+  });
+
+  it('announces no delay for a cancelled train', () => {
+    show(ready({ current: departure({ id: 'x', time: at(9, 20), status: 'cancelled' }) }));
+    expect(screen.getByText('Zug fällt aus')).toBeDefined();
+  });
+
+  it('announces a replacement train in the running line', () => {
+    show(ready({ current: departure({ id: 'x', status: 'replacement' }) }));
+    expect(screen.getByText('Ersatzzug')).toBeDefined();
+  });
+
+  it('announces a platform change as text and keeps the platform it stands at', () => {
+    show(
+      ready({
+        current: departure({ id: 'x', platform: { planned: '9', actual: '4', changed: true } }),
+      }),
+    );
+    expect(screen.getByText('Heute von Gleis 4')).toBeDefined();
+    expect(screen.getByText('9')).toBeDefined();
+  });
+
+  it('leads a train ending here with its origin and keeps people off it', () => {
+    show(ready({ current: terminating, following: [terminating] }));
+    expect(screen.getAllByText('von Dieburg')).toHaveLength(2);
+    expect(screen.getByText('Bitte nicht einsteigen')).toBeDefined();
+    expect(screen.getByText('Fahrt endet hier')).toBeDefined();
+    expect(screen.getByText('Zug endet hier')).toBeDefined();
+  });
+
+  it('marks a cancelled following train in its own running line', () => {
+    show(ready({ following: [departure({ id: 'x', status: 'cancelled' })] }));
+    expect(screen.getByText('Fällt aus')).toBeDefined();
+  });
+
+  it('shows two following trains and no more', () => {
+    show(
+      ready({
+        following: ['Mainz Hbf', 'Hanau Hbf', 'Fulda'].map((name, index) =>
+          departure({ id: name, time: at(10 + index), destination: { name } }),
+        ),
+      }),
+    );
+    expect(screen.getByText('Mainz Hbf')).toBeDefined();
+    expect(screen.getByText('Hanau Hbf')).toBeDefined();
+    expect(screen.queryByText('Fulda')).toBeNull();
+  });
+
+  it('leaves the coach area empty without a coach sequence', () => {
+    const container = show(ready({ current: departure({ id: 'x' }) }));
+    expect(container.querySelector('[data-state]')).toBeNull();
+  });
+
+  it('keeps its label while the first fetch runs, and nothing else', () => {
+    const container = show({ state: 'loading' });
+    expect(screen.getByText('Folgezüge:')).toBeDefined();
+    expect(invertedFields(container)).toHaveLength(0);
+  });
+
+  it('says so when the source has not answered', () => {
+    show({ state: 'unavailable' });
+    expect(screen.getByText('Derzeit keine Zugdaten')).toBeDefined();
+  });
+
+  it('gives stale data the running line only while no train text needs it', () => {
+    const { rerender } = render(
+      <V3_5x2 board={ready({ current: departure({ id: 'x' }), stale: true })} />,
+    );
+    expect(screen.getByText('Daten nicht aktuell')).toBeDefined();
+
+    rerender(<V3_5x2 board={{ ...delayedBy(10), stale: true }} />);
+    expect(screen.queryByText('Daten nicht aktuell')).toBeNull();
+    expect(screen.getByText('Verspätung ca. 10 Min.')).toBeDefined();
+  });
+});
