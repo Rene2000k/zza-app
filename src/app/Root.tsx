@@ -1,20 +1,25 @@
 import { Suspense, lazy } from 'react';
 import { App } from './App';
+import type { ReactNode } from 'react';
 
-// A development page, loaded on demand so it stays out of the display's own bundle.
+// Development pages, loaded on demand so they stay out of the display's own bundle.
 const ComponentGallery = lazy(() =>
   import('./gallery/ComponentGallery').then((module) => ({ default: module.ComponentGallery })),
 );
+const DesignPreview = lazy(() =>
+  import('./preview/DesignPreview').then((module) => ({ default: module.DesignPreview })),
+);
 
-/** Picks the page by path: the component gallery at `/gallery`, the display everywhere else. */
+/**
+ * Picks the page by path: the block gallery at `/gallery`, the design playground at
+ * `/preview`, the configured display everywhere else.
+ */
 export const Root = () => {
-  const isGallery =
-    window.location.pathname.split('/').findLast((segment) => segment !== '') === 'gallery';
+  const page = window.location.pathname.split('/').findLast((segment) => segment !== '');
 
-  if (!isGallery) return <App />;
-  return (
-    <Suspense fallback={null}>
-      <ComponentGallery />
-    </Suspense>
-  );
+  if (page === 'gallery') return withFallback(<ComponentGallery />);
+  if (page === 'preview') return withFallback(<DesignPreview />);
+  return <App />;
 };
+
+const withFallback = (page: ReactNode) => <Suspense fallback={null}>{page}</Suspense>;

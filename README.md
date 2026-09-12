@@ -21,13 +21,14 @@ specific platform's own display would show.
 
 ## Status
 
-Early. The architecture skeleton runs on fixture data: provider layer, domain model, clock port and a
-plain smoke screen. There is no display design yet, and the live data source is not wired up — the
-current screen is a bare table whose only job is to prove data flows through the layers.
+Early, but the layers are in place: provider, domain model, clock port, view model, the shared display
+blocks and a design registry. Departures come from IRIS
+([ADR-0002](docs/adr/0002-use-iris-as-primary-departure-data-source.md)) or from fixtures.
 
-Departure data will come from IRIS ([ADR-0002](docs/adr/0002-use-iris-as-primary-departure-data-source.md)).
-Coach-sequence data has no working free source, so that part of a display degrades to a defined idle
-state.
+The only design so far is `debug`, and it is deliberately ugly — its job is to prove that the core does
+not know its designs ([ADR-0009](docs/adr/0009-shared-blocks-own-mechanism-designs-choose-wording.md)).
+The replica of V3 5X2 comes next. Coach-sequence data has no working free source, so that part of a
+display degrades to a defined idle state.
 
 ## Getting started
 
@@ -41,6 +42,15 @@ npm run lint     # ESLint, including the clock-port rule from ADR-0004
 npm run build    # type-check and production build
 ```
 
+## Development pages
+
+Two pages sit next to the display itself:
+
+| Path | Shows |
+|---|---|
+| `/gallery` | every shared display block on its own, in the cases that matter |
+| `/preview` | any design against any named scenario: cancellation, platform change, long name, stale data, no data at all |
+
 ## Configuring a display
 
 A display is configured entirely through the URL query, so a configured display is a shareable link:
@@ -53,8 +63,8 @@ http://localhost:5173/?station=8000105&platform=9&provider=mock
 |---|---|---|
 | `station` | EVA number (IBNR) of the station, e.g. `8000105` | required |
 | `platform` | Platform label, e.g. `9` or `1a`. Omit for the whole station | all platforms |
-| `design` | Design id | `debug` |
-| `provider` | Data source id — currently only `mock` | `mock` |
+| `design` | Design id — currently only `debug` | `debug` |
+| `provider` | Data source id: `mock` (fixtures) or `iris` (live) | `mock` |
 | `refreshSeconds` | Poll interval, 10–600 | `30` |
 | `horizonMinutes` | How far ahead the board looks, 5–360 | `120` |
 | `simulatedTime` | Freeze the clock at this ISO 8601 instant (demo mode) | live time |
