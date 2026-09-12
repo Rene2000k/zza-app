@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ClockContext } from './ClockContext';
-import { SmokeBoard } from './SmokeBoard';
+import { DesignHost } from './DesignHost';
+import styles from './App.module.css';
 import { parseConfig } from './config';
 import { useConfiguredClock } from '@/hooks/useClock';
 
@@ -27,7 +28,7 @@ export const App = () => {
 
   if (!result.ok) {
     return (
-      <main>
+      <main className={styles.problems}>
         <h1>Konfiguration ungültig</h1>
         <ul>
           {result.problems.map((problem) => (
@@ -44,8 +45,8 @@ export const App = () => {
   return (
     <ClockContext.Provider value={clock}>
       <QueryClientProvider client={queryClient}>
-        <main>
-          <SmokeBoard config={result.config} />
+        <main className={styles.display}>
+          <DesignHost config={result.config} />
         </main>
       </QueryClientProvider>
     </ClockContext.Provider>

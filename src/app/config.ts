@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { designIds, findDesign } from '@/designs/registry';
 
 /**
  * One display instance, described completely.
@@ -42,6 +43,16 @@ export const parseConfig = (search: string): ConfigResult => {
   const parsed = displayConfigSchema.safeParse(raw);
 
   if (parsed.success) {
+    // Checked here rather than in the schema: which designs exist is a fact about the
+    // registry, and naming the available ones turns a typo into a usable message.
+    if (findDesign(parsed.data.design) === undefined) {
+      return {
+        ok: false,
+        problems: [
+          `design: unknown design "${parsed.data.design}", available: ${designIds().join(', ')}`,
+        ],
+      };
+    }
     return { ok: true, config: parsed.data };
   }
   return {

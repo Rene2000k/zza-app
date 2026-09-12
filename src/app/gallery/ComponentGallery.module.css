@@ -2,6 +2,10 @@
  * The gallery stands in for a design: it sets font and colours on each frame, the way a
  * design does in its own scope, so the blocks show that they inherit their look.
  */
+.gallery {
+  padding: 1rem;
+}
+
 .section {
   margin-block: 2rem;
 }

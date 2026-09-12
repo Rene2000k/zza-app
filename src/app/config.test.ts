@@ -30,6 +30,14 @@ describe('display configuration', () => {
     expect(parseConfig('?station=8000105&refreshSeconds=10').ok).toBe(true);
   });
 
+  it('names the designs it knows when the configured one does not exist', () => {
+    const result = parseConfig('?station=8000105&design=v9-9x9');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems.join(' ')).toContain('v9-9x9');
+    expect(result.problems.join(' ')).toContain('debug');
+  });
+
   it('round-trips through a share link', () => {
     const parsed = parseConfig('?station=8000105&platform=1a&refreshSeconds=45');
     expect(parsed.ok).toBe(true);
@@ -41,7 +49,9 @@ describe('display configuration', () => {
   });
 
   it('accepts a simulated time for the demo clock', () => {
-    const result = parseConfig('?station=8000105&simulatedTime=2026-09-09T08:00:00%2B02:00&timeFactor=60');
+    const result = parseConfig(
+      '?station=8000105&simulatedTime=2026-09-09T08:00:00%2B02:00&timeFactor=60',
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.config.timeFactor).toBe(60);
