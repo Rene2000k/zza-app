@@ -1,4 +1,11 @@
-import { Ticker, TrainFormationDisplay, formatClockTime, formatDelay } from '@/components/zza';
+import {
+  FittedText,
+  Marquee,
+  Ticker,
+  TrainFormationDisplay,
+  formatClockTime,
+  formatDelay,
+} from '@/components/zza';
 import styles from './ComponentGallery.module.css';
 import type { ReactNode } from 'react';
 import type { EntryTime } from '@/domain/boardEntry';
@@ -111,6 +118,34 @@ const formation: TrainFormation = {
 };
 
 const blocks: readonly BlockSection[] = [
+  {
+    name: 'FittedText',
+    summary:
+      'Staucht zu breiten Text, statt ihn abzuschneiden — was ein echter Anzeiger mit einem langen Ortsnamen tut. Unter einer Mindestbreite hört das Stauchen auf.',
+    samples: [
+      { label: 'passt', content: <FittedText>Gießen</FittedText>, width: '12em' },
+      {
+        label: 'zu breit, wird gestaucht',
+        content: <FittedText>Frankfurt(M) Flughafen Fernbf</FittedText>,
+        width: '12em',
+      },
+    ],
+  },
+  {
+    name: 'Marquee',
+    summary:
+      'Läuft nur, wenn der Inhalt breiter ist als sein Feld; die zweite Kopie macht den Umlauf nahtlos.',
+    samples: [
+      { label: 'kurz — steht', content: <Marquee>kurze Meldung</Marquee>, width: '20em' },
+      {
+        label: 'lang — läuft',
+        content: (
+          <Marquee>Diese Meldung ist deutlich länger als ihr Feld und läuft deshalb um</Marquee>
+        ),
+        width: '20em',
+      },
+    ],
+  },
   {
     name: 'Ticker',
     summary:

@@ -4,11 +4,28 @@
  * bringing a look of its own (ADR-0009).
  */
 
-/* Running message line: one line, clipped. The movement follows with the marquee mechanism. */
-.ticker {
-  display: block;
-  white-space: nowrap;
+/* Running line: the field clips, the track carries the content and its seamless copy. */
+.marquee {
   overflow: hidden;
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+/* Squeezed text: the field clips, the content keeps its natural width and is scaled. */
+.fitted {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.fittedContent {
+  display: inline-block;
+  transform-origin: left center;
 }
 
 /* Coach-position display: section letters above, the coach strip below. */
