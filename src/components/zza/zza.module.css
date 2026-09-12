@@ -1,0 +1,37 @@
+/*
+ * Only what the shared blocks need for their mechanism. Colour and font come from the
+ * element a design places a block in, so a block looks like its surroundings instead of
+ * bringing a look of its own (ADR-0009).
+ */
+
+/* Running message line: one line, clipped. The movement follows with the marquee mechanism. */
+.ticker {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Coach-position display: section letters above, the coach strip below. */
+.formation {
+  display: flex;
+  flex-direction: column;
+}
+
+.sections,
+.coaches {
+  display: flex;
+}
+
+.sections > *,
+.coach {
+  flex: 1;
+  text-align: center;
+}
+
+.coaches {
+  border: var(--zza-formation-stroke) solid currentColor;
+}
+
+.coach + .coach {
+  border-left: var(--zza-formation-stroke) solid currentColor;
+}

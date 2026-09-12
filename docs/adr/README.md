@@ -16,6 +16,7 @@ only covers the mechanics.
 | [0006](0006-platform-filter-keeps-entries-that-changed-away.md) | A platform-filtered board keeps entries that changed away from that platform | accepted |
 | [0007](0007-parse-iris-xml-with-native-domparser.md) | Parse IRIS XML with the runtime's native DOMParser | accepted |
 | [0008](0008-plan-hours-with-look-back-and-cache.md) | Fetch plan hours with a fixed 120-minute look-back, cached per hour | accepted |
+| [0009](0009-shared-blocks-own-mechanism-designs-choose-wording.md) | Shared display blocks own mechanism, designs choose what is printed | accepted |
 
 Keep this table in sync in the same commit that adds an ADR. Newest entries at the bottom.
 
