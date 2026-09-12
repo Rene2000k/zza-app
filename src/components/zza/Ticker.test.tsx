@@ -32,6 +32,25 @@ describe('Ticker', () => {
     expect(screen.getByRole('marquee').textContent).toBe('eins +++ zwei');
   });
 
+  it('closes a line of several messages with the separator when the design asks for it', () => {
+    const { rerender } = render(
+      <Ticker
+        messages={[
+          { kind: 'info', text: 'eins' },
+          { kind: 'info', text: 'zwei' },
+        ]}
+        separator=" +++ "
+        closeWithSeparator
+      />,
+    );
+    expect(screen.getByRole('marquee').textContent).toBe('eins +++ zwei +++');
+
+    rerender(
+      <Ticker messages={[{ kind: 'info', text: 'eins' }]} separator=" +++ " closeWithSeparator />,
+    );
+    expect(screen.getByRole('marquee').textContent).toBe('eins');
+  });
+
   it('renders nothing when no message has a text', () => {
     render(<Ticker messages={[{ kind: 'delayCause', code: '9999' }]} />);
     expect(screen.queryByRole('marquee')).toBeNull();

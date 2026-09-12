@@ -7,6 +7,11 @@ export interface TickerProps {
   readonly messages: readonly BoardMessage[];
   /** Placed between two messages; the reference displays use " - " or " +++ ". */
   readonly separator?: string;
+  /**
+   * Also end the line with the separator once it holds more than one message, so a repeating
+   * line reads "A +++ B +++" before it starts over. A single message stays bare.
+   */
+  readonly closeWithSeparator?: boolean;
   /** Travel in canvas pixels per second. */
   readonly speed?: number;
 }
@@ -20,12 +25,20 @@ export interface TickerProps {
  * standing. It renders nothing when no message has a text, and takes its colours from
  * wherever the design places it.
  */
-export const Ticker = ({ messages, separator = ' - ', speed }: TickerProps) => {
+export const Ticker = ({
+  messages,
+  separator = ' - ',
+  closeWithSeparator = false,
+  speed,
+}: TickerProps) => {
   const texts = displayableMessages(messages).map((message) => message.text);
   if (texts.length === 0) return null;
+  const closing = closeWithSeparator && texts.length > 1 ? separator.trimEnd() : '';
   return (
     <div role="marquee">
-      <Marquee {...(speed === undefined ? {} : { speed })}>{texts.join(separator)}</Marquee>
+      <Marquee {...(speed === undefined ? {} : { speed })}>
+        {texts.join(separator) + closing}
+      </Marquee>
     </div>
   );
 };
