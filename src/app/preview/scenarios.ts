@@ -85,6 +85,16 @@ const cancelled: DepartureEntry = departure({
   via: [],
 });
 
+/** Runs in place of the cancelled RB 15702. */
+const replacement: DepartureEntry = departure({
+  id: 'rb-15792',
+  train: { category: 'RB', number: '15792', line: 'RB58' },
+  time: at(12),
+  status: 'replacement',
+  destination: { name: 'Bamberg' },
+  via: [{ name: 'Aschaffenburg Hbf' }, { name: 'Würzburg Hbf' }],
+});
+
 const terminating: TerminatingArrivalEntry = {
   kind: 'terminatingArrival',
   id: 'rb-15645',
@@ -155,6 +165,11 @@ export const previewScenarios: readonly PreviewScenario[] = [
     id: 'langer-name',
     name: 'Langer Ortsname, volle Via-Liste',
     board: ready({ current: longName, following: [ice, regional] }),
+  },
+  {
+    id: 'ersatzzug',
+    name: 'Ersatzzug',
+    board: ready({ current: replacement, following: [ice, terminating] }),
   },
   { id: 'ohne-zug', name: 'Kein Zug im Zeitraum', board: ready({}) },
   {

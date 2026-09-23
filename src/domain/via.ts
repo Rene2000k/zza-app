@@ -7,27 +7,15 @@ export interface ViaSelection {
 }
 
 /**
- * Picks the via stops a display actually has room for.
+ * Picks the via stops a display actually has room for: the next ones in travel order.
  *
- * ADR-0005: a fixed, deterministic rule rather than a significance heuristic — IRIS gives
- * no data to rank stops by importance. Keeps the first `maxStops - 1` stops plus the final
- * one before the destination, so the approach point is never the one silently dropped.
- * `maxStops` is a parameter, not a constant: a design with more room asks for more, with
- * no change to how the data was mapped in the first place.
+ * ADR-0005: a fixed, deterministic count rather than a significance heuristic — IRIS gives no
+ * data to rank stops by importance — and the stops right after this station rather than a jump
+ * to the approach point, because that is what the real displays show. `maxStops` is a parameter,
+ * not a constant: a design with more room asks for more, with no change to how the data was
+ * mapped in the first place.
  */
 export const selectViaStops = (via: readonly RouteStop[], maxStops: number): ViaSelection => {
-  if (via.length <= maxStops) {
-    return { stops: via, omittedCount: 0 };
-  }
-  if (maxStops < 1) {
-    return { stops: [], omittedCount: via.length };
-  }
-
-  const kept = via.slice(0, maxStops - 1);
-  const last = via.at(-1);
-  if (last === undefined) {
-    // Unreachable: via.length > maxStops >= 1 guarantees at least one element.
-    throw new Error('selectViaStops: via unexpectedly empty');
-  }
-  return { stops: [...kept, last], omittedCount: via.length - maxStops };
+  const stops = via.slice(0, Math.max(0, maxStops));
+  return { stops, omittedCount: via.length - stops.length };
 };

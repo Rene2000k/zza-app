@@ -42,11 +42,14 @@ names and the path order, nothing that ranks a station's size or importance.
 
 **O03 — a fixed, count-based selection rule**, kept out of the provider adapter: the domain model
 carries the **full** via list exactly as the source reports it (no stop is discarded during
-mapping), and a small, reusable function picks a bounded subset for display — the first `n - 1`
-stops plus the final stop immediately before the destination, whenever the full list is longer than
-`n`, so the last point before arrival is never the one silently dropped. `n` is a parameter of the
+mapping), and a small, reusable function picks a bounded subset for display — the next `n`
+stops in travel order, whenever the full list is longer than `n`. `n` is a parameter of the
 function, not a fixed constant, so a design with more room can ask for more stops without any
 change beneath it.
+
+_Corrected on 2026-09-12:_ the rule originally kept the first `n - 1` stops plus the final one
+before the destination. The real display shows the next stops in travel order, so that is the rule
+now.
 
 The trade-off accepted is precision: a fixed rule cannot single out the one interchange station
 that actually matters in the middle of a long route the way a significance heuristic could — but a
@@ -90,7 +93,7 @@ highest-ranked ones.
 
 ### O03 — Fixed, count-based rule
 
-Keep the first `n - 1` stops plus the final stop before the destination when the full list exceeds
+Keep the next `n` stops in travel order when the full list exceeds
 `n`; otherwise show it all. `n` is supplied by the caller.
 
 | ID | Driver | Assessment |

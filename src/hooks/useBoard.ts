@@ -16,6 +16,12 @@ const STALE_AFTER_POLLS = 3;
 const POLL_JITTER = 0.1;
 
 /**
+ * A board fetch still running after this long is given up. IRIS answers in well under a
+ * second (ADR-0002), so this only ever ends a request that is not coming back.
+ */
+const FETCH_TIMEOUT_MS = 10_000;
+
+/**
  * The next poll interval: the configured one, varied by up to ±10 %.
  *
  * Displays opened at the same moment would otherwise poll the source in lockstep for as
@@ -25,6 +31,68 @@ export const jitteredIntervalMs = (
   refreshSeconds: number,
   random: () => number = Math.random,
 ): number => Math.round(refreshSeconds * 1000 * (1 + (random() * 2 - 1) * POLL_JITTER));
+
+/**
+ * A number in [0, 1) that depends on `seed` alone: asked twice with the same seed, it gives
+ * the same answer (one step of mulberry32).
+ */
+export const seededUnit = (seed: number): number => {
+  let t = (seed + 0x6d2b79f5) | 0;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+};
+
+/**
+ * Runs `work` with a signal that aborts when `parent` does or once `timeoutMs` has passed,
+ * and settles at that moment even if `work` ignores its signal.
+ *
+ * TanStack Query starts no new poll while the previous fetch is still running — it waits
+ * for that one. A request that never answers would therefore freeze the display until it
+ * is reloaded; bounded, it becomes an ordinary failure that the next poll recovers from.
+ */
+export const withTimeout = <T>(
+  work: (signal: AbortSignal) => Promise<T>,
+  parent: AbortSignal,
+  timeoutMs: number,
+): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    const controller = new AbortController();
+    const settle = () => {
+      clearTimeout(timer);
+      parent.removeEventListener('abort', onParentAbort);
+    };
+    const onParentAbort = () => {
+      settle();
+      controller.abort(parent.reason);
+      reject(asError(parent.reason, 'Board fetch was aborted'));
+    };
+    const timer = setTimeout(() => {
+      settle();
+      const error = new Error(`Board fetch did not finish within ${timeoutMs} ms`);
+      controller.abort(error);
+      reject(error);
+    }, timeoutMs);
+
+    if (parent.aborted) {
+      onParentAbort();
+      return;
+    }
+    parent.addEventListener('abort', onParentAbort, { once: true });
+    work(controller.signal).then(
+      (value) => {
+        settle();
+        resolve(value);
+      },
+      (error: unknown) => {
+        settle();
+        reject(asError(error, 'Board fetch failed'));
+      },
+    );
+  });
+
+const asError = (reason: unknown, fallback: string): Error =>
+  reason instanceof Error ? reason : new Error(fallback);
 
 /**
  * Fetches and refreshes the board for a configuration.
@@ -51,17 +119,33 @@ export const useBoard = (config: DisplayConfig): BoardState => {
   const query = useQuery({
     queryKey: ['board', config.provider, config.station, config.platform, config.horizonMinutes],
     queryFn: ({ signal }) =>
-      provider.getBoard(
-        {
-          station: config.station,
-          ...(config.platform === undefined ? {} : { platform: config.platform }),
-          now: clock.now(),
-          horizonMinutes: config.horizonMinutes,
-        },
+      withTimeout(
+        (bounded) =>
+          provider.getBoard(
+            {
+              station: config.station,
+              ...(config.platform === undefined ? {} : { platform: config.platform }),
+              now: clock.now(),
+              horizonMinutes: config.horizonMinutes,
+            },
+            bounded,
+          ),
         signal,
+        FETCH_TIMEOUT_MS,
       ),
-    // A function, so TanStack Query asks again after every poll and the jitter is fresh.
-    refetchInterval: () => jitteredIntervalMs(config.refreshSeconds),
+    // TanStack Query asks for the interval on every render, not only after a poll, and
+    // restarts its timer whenever the answer differs. A display re-renders every second, so a
+    // freshly rolled value would restart the timer before it ever fired and polling would stop
+    // after the first fetch. The jitter is therefore drawn from the time of the last result:
+    // fixed between two polls, new after each one, and different for displays that fetched
+    // at different moments.
+    refetchInterval: (query) =>
+      jitteredIntervalMs(config.refreshSeconds, () =>
+        seededUnit(query.state.dataUpdatedAt + query.state.errorUpdatedAt),
+      ),
+    // Nobody brings a display back into view: it keeps polling while its window is hidden,
+    // minimised or covered, where TanStack Query would otherwise pause.
+    refetchIntervalInBackground: true,
     // Keep showing the previous board while refetching and on failure.
     placeholderData: (previous) => previous,
     // Backoff within a poll: TanStack Query retries after 1 s, then 2 s.
