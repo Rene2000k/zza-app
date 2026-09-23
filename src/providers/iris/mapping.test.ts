@@ -89,9 +89,7 @@ describe('resolveStatus', () => {
   });
 
   it('is cancelled on cs="c" — the real RB34 cancellation fragment', () => {
-    const changed = parseElement(
-      '<dp cpth="" ct="2609101545" cs="c" clt="2609101521" l="RB34"/>',
-    );
+    const changed = parseElement('<dp cpth="" ct="2609101545" cs="c" clt="2609101521" l="RB34"/>');
     expect(resolveStatus(changed, onTime)).toBe('cancelled');
   });
 
@@ -105,10 +103,9 @@ describe('resolveStatus', () => {
 
 describe('resolvePathNames', () => {
   it('splits the planned path', () => {
-    expect(resolvePathNames(parseElement('<dp ppth="Dortelweil|Groß Karben"/>'), undefined)).toEqual([
-      'Dortelweil',
-      'Groß Karben',
-    ]);
+    expect(
+      resolvePathNames(parseElement('<dp ppth="Dortelweil|Groß Karben"/>'), undefined),
+    ).toEqual(['Dortelweil', 'Groß Karben']);
   });
 
   it('prefers a non-empty changed path over the planned one', () => {
@@ -151,15 +148,81 @@ describe('mapMessage', () => {
       text: 'Störung',
       priority: 1,
     });
-    expect(mapMessage(parseElement('<m t="h" cat="Information"/>'))).toMatchObject({ kind: 'info' });
+    expect(mapMessage(parseElement('<m t="h" cat="Information"/>'))).toMatchObject({
+      kind: 'info',
+    });
     expect(mapMessage(parseElement('<m t="h" cat="Bauarbeiten"/>'))).toMatchObject({
       kind: 'constraint',
     });
   });
 
+  it('resolves a quality code to its text and topic', () => {
+    // Real fragment from the Bad Vilbel capture, the most frequent q code there.
+    expect(mapMessage(parseElement('<m t="q" c="85" ts="2609100219"/>'))).toEqual({
+      kind: 'qualityNotice',
+      code: '85',
+      topic: 'missingCoaches',
+      text: 'Ein Wagen fehlt',
+    });
+    expect(mapMessage(parseElement('<m t="q" c="82"/>'))).toEqual({
+      kind: 'qualityNotice',
+      code: '82',
+      topic: 'missingCoaches',
+      text: 'Mehrere Wagen fehlen',
+    });
+  });
+
+  it('files quality codes under the topic a design selects by, not under their number', () => {
+    const topicOf = (code: string): string | undefined => {
+      const message = mapMessage(parseElement(`<m t="q" c="${code}"/>`));
+      return message?.kind === 'qualityNotice' ? message.topic : undefined;
+    };
+    expect(topicOf('80')).toBe('coachOrder');
+    expect(topicOf('91')).toBe('bicycle');
+    expect(topicOf('90')).toBe('catering');
+    expect(topicOf('95')).toBe('accessibility');
+    expect(topicOf('70')).toBe('onboardServices');
+    expect(topicOf('86')).toBe('reservation');
+    expect(topicOf('97')).toBe('occupancy');
+    expect(topicOf('78')).toBe('busReplacement');
+    expect(topicOf('98')).toBe('other');
+  });
+
+  it('resolves code 99, which the source sends as both a delay cause and a quality notice', () => {
+    // Live at Munchen Hbf on 2026-09-23: six t="d" c="99". A code above the range delay
+    // causes otherwise keep to must still resolve, or those messages lose their text.
+    expect(mapMessage(parseElement('<m t="d" c="99"/>'))).toEqual({
+      kind: 'delayCause',
+      code: '99',
+      text: 'Verzögerungen im Betriebsablauf',
+    });
+    expect(mapMessage(parseElement('<m t="q" c="99"/>'))).toEqual({
+      kind: 'qualityNotice',
+      code: '99',
+      topic: 'other',
+      text: 'Verzögerungen im Betriebsablauf',
+    });
+  });
+
+  it('discards the codes that only withdraw an earlier notice', () => {
+    // 84/88/89 revoke rather than state; ADR-0011 discards them without acting on them, so
+    // none of them may reach a display as "Zug verkehrt richtig gereiht".
+    expect(mapMessage(parseElement('<m t="q" c="84"/>'))).toBeUndefined();
+    expect(mapMessage(parseElement('<m t="q" c="88"/>'))).toBeUndefined();
+    expect(mapMessage(parseElement('<m t="q" c="89"/>'))).toBeUndefined();
+  });
+
+  it('contributes nothing for an unknown quality code', () => {
+    // Unlike a delay cause, which keeps its code without text: without a topic there is
+    // nothing to select the message by, so it is not produced at all.
+    expect(mapMessage(parseElement('<m t="q" c="9999"/>'))).toBeUndefined();
+    // A quality code below the observed 70-99 range is unknown too, and stays silent.
+    expect(mapMessage(parseElement('<m t="q" c="43"/>'))).toBeUndefined();
+  });
+
   it('contributes nothing for an unrecognized message type', () => {
-    // t="f"/"q"/"c"/... have no confirmed display meaning (ADR-0002) — real fragment.
-    expect(mapMessage(parseElement('<m t="q" c="85"/>'))).toBeUndefined();
+    // t="f"/"c"/... have no confirmed display meaning (ADR-0002) — real fragment.
+    expect(mapMessage(parseElement('<m t="f" c="0"/>'))).toBeUndefined();
   });
 });
 
@@ -197,16 +260,132 @@ describe('mapBoardEntries against real captures', () => {
     expect(entry.messages.filter((m) => m.kind === 'disruption')).toHaveLength(2);
   });
 
-  it('maps a real delay with an unmapped message type as an empty message list', () => {
-    // RB 15735: 6 minutes late (16:58 -> 17:04 planned), its only messages are t="q",
-    // which this adapter does not resolve — the delay must still show without them.
+  it('maps a real delay whose only messages are quality notices', () => {
+    // RB 15735: 6 minutes late (16:58 -> 17:04 planned), its only messages are t="q" c="85",
+    // arriving twice under different ids — the delay and the notices must both survive.
     const entry = asDeparture(entries.find((e) => e.id === '760501916431835347-2609101607-14'));
     expect(entry).toBeDefined();
     if (entry === undefined) return;
     expect(entry.status).toBe('delayed');
-    expect(entry.messages).toEqual([]);
+    expect(entry.messages).toEqual([
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+    ]);
     expect(entry.destination.name).toBe('Frankfurt(Main)Hbf');
     expect(entry.via.map((s) => s.name)).toEqual(['Frankfurt(Main)West']);
+  });
+});
+
+describe('mapBoardEntries: withdrawn quality notices', () => {
+  /**
+   * The shapes here follow live responses for Frankfurt Hbf and Munchen Hbf (2026-09-23),
+   * where code 88 turned out to be common: 17 across the two stations, and on 8 stops it
+   * followed a notice that was still standing.
+   */
+  const planDoc = parseDoc(
+    "<timetable station='Frankfurt(Main)Hbf'>" +
+      '<s id="stop-1">' +
+      '<tl f="N" t="p" o="800640" c="RE" n="4263"/>' +
+      '<dp pt="2609231100" pp="9" l="RE2" ppth="Mainz Hbf|Koblenz Hbf"/>' +
+      '</s></timetable>',
+  );
+
+  const changesWith = (messages: string): Document =>
+    parseDoc(
+      "<timetable station='Frankfurt(Main)Hbf'>" +
+        '<s id="stop-1">' +
+        messages +
+        '</s></timetable>',
+    );
+
+  const quality = (entry: BoardEntry | undefined) =>
+    (entry?.messages ?? []).filter((m) => m.kind === 'qualityNotice');
+
+  it('drops a notice that code 88 withdrew afterwards', () => {
+    // The Frankfurt case: 95 at 10:48, then 88 at 11:05.
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="95" ts="2609231048"/><m id="r2" t="q" c="88" ts="2609231105"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([]);
+  });
+
+  it('keeps a notice the source restated at the moment it withdrew', () => {
+    // The Munchen case: 95 (02:44), 88 (02:46), 95 (02:46). The restatement must survive,
+    // which is why the comparison is strictly earlier rather than up to and including.
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="95" ts="2609230244"/>' +
+        '<m id="r2" t="q" c="88" ts="2609230246"/>' +
+        '<m id="r3" t="q" c="95" ts="2609230246"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([
+      {
+        kind: 'qualityNotice',
+        code: '95',
+        topic: 'accessibility',
+        text: 'Universaltoilette fehlt',
+      },
+    ]);
+  });
+
+  it('keeps a notice the source raised after the withdrawal', () => {
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="88" ts="2609231000"/><m id="r2" t="q" c="85" ts="2609231130"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+    ]);
+  });
+
+  it('lets code 84 withdraw only the coach order, leaving other topics standing', () => {
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="80" ts="2609231000"/>' +
+        '<m id="r2" t="q" c="91" ts="2609231000"/>' +
+        '<m id="r3" t="q" c="84" ts="2609231100"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([
+      {
+        kind: 'qualityNotice',
+        code: '91',
+        topic: 'bicycle',
+        text: 'Fahrradmitnahme nicht möglich',
+      },
+    ]);
+  });
+
+  it('lets code 89 withdraw only reservations', () => {
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="86" ts="2609231000"/>' +
+        '<m id="r2" t="q" c="85" ts="2609231000"/>' +
+        '<m id="r3" t="q" c="89" ts="2609231100"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+    ]);
+  });
+
+  it('withdraws nothing when the withdrawal carries no timestamp', () => {
+    // Without a ts the withdrawal cannot be placed in the sequence, so guessing is worse
+    // than leaving the notice standing.
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="85" ts="2609231000"/><m id="r2" t="q" c="88"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toHaveLength(1);
+  });
+
+  it('leaves delay causes alone, whatever the quality notices say', () => {
+    const fchg = changesWith(
+      '<m id="r1" t="d" c="43" ts="2609231000"/><m id="r2" t="q" c="88" ts="2609231100"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(entry?.messages).toEqual([
+      { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
+    ]);
   });
 });
 
@@ -215,7 +394,7 @@ describe('mapBoardEntries: terminating and originating stops (real Frankfurt fra
 
   it('maps an arrival-only stop as a terminating arrival (ADR-0003)', () => {
     const planDoc = parseDoc(
-      '<timetable station=\'Frankfurt(Main)Hbf\'>' +
+      "<timetable station='Frankfurt(Main)Hbf'>" +
         '<s id="-2052222982576990269-2609101504-14">' +
         '<tl f="N" t="p" o="800640" c="RE" n="4263"/>' +
         '<ar pt="2609101651" pp="19" l="RE2" fb="RE2" ' +
@@ -228,7 +407,12 @@ describe('mapBoardEntries: terminating and originating stops (real Frankfurt fra
     const terminating = asTerminating(entry);
     expect(terminating).toBeDefined();
     if (terminating === undefined) return;
-    expect(terminating.train).toEqual({ category: 'RE', number: '4263', line: 'RE2', operator: '800640' });
+    expect(terminating.train).toEqual({
+      category: 'RE',
+      number: '4263',
+      line: 'RE2',
+      operator: '800640',
+    });
     // Route stops carry no EVA number: IRIS names them only.
     expect(terminating.origin).toEqual({ name: 'Koblenz Hbf' });
     expect(terminating.time.planned).toEqual(new Date('2026-09-10T14:51:00Z'));
@@ -236,7 +420,7 @@ describe('mapBoardEntries: terminating and originating stops (real Frankfurt fra
 
   it('maps a departure-only stop as an originating departure', () => {
     const planDoc = parseDoc(
-      '<timetable station=\'Frankfurt(Main)Hbf\'>' +
+      "<timetable station='Frankfurt(Main)Hbf'>" +
         '<s id="-5269309676411018437-2609101634-1">' +
         '<tl f="S" t="p" o="800528" c="S" n="36854"/>' +
         '<dp pt="2609101634" pp="19" l="S8" fb="S8" ' +

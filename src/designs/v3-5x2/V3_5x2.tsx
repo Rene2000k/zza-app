@@ -14,7 +14,7 @@ import { formatTrainRef } from '@/domain/train';
 import { selectViaStops } from '@/domain/via';
 import styles from './v3-5x2.module.css';
 import type { BoardEntry, EntryTime } from '@/domain/boardEntry';
-import type { BoardMessage, MessageKind } from '@/domain/message';
+import type { BoardMessage, MessageKind, PlainMessageKind, QualityTopic } from '@/domain/message';
 import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
 export interface V3_5x2Props {
@@ -70,6 +70,23 @@ const DELAY_STEP = 5;
  * disruption reports do not run here — the display words the delay itself.
  */
 const SHOWN_KINDS: ReadonlySet<MessageKind> = new Set<MessageKind>(['cancellation']);
+
+/**
+ * Which shortcomings of the train itself this display announces (ADR-0011). What a traveller
+ * on the platform can still act on: where to stand, whether the bicycle comes along, whether
+ * to expect a seat, whether a bus runs instead. Left out: WLAN and on-board entertainment,
+ * reservations, and the source's own "sonstige Qualitätsmängel", which says nothing useful
+ * without a subject.
+ */
+const SHOWN_TOPICS: ReadonlySet<QualityTopic> = new Set<QualityTopic>([
+  'coachOrder',
+  'missingCoaches',
+  'bicycle',
+  'catering',
+  'accessibility',
+  'occupancy',
+  'busReplacement',
+]);
 
 const MainTrain = ({ entry }: { readonly entry: BoardEntry }) => (
   <>
@@ -215,10 +232,15 @@ const platformChange = (entry: BoardEntry, platform: string | undefined): BoardM
     : [];
 };
 
+/** A quality notice is picked by its subject, every other message by its kind. */
 const shown = (messages: readonly BoardMessage[]): BoardMessage[] =>
-  messages.filter((message) => SHOWN_KINDS.has(message.kind));
+  messages.filter((message) =>
+    message.kind === 'qualityNotice'
+      ? SHOWN_TOPICS.has(message.topic)
+      : SHOWN_KINDS.has(message.kind),
+  );
 
-const notice = (text: string, kind: MessageKind = 'info'): BoardMessage => ({ kind, text });
+const notice = (text: string, kind: PlainMessageKind = 'info'): BoardMessage => ({ kind, text });
 
 /** The same text often arrives from the stop and from the movement; a line says it once. */
 const unique = (messages: readonly BoardMessage[]): BoardMessage[] => {

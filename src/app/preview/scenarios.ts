@@ -106,6 +106,33 @@ const terminating: TerminatingArrivalEntry = {
   origin: { name: 'Dieburg' },
 };
 
+/**
+ * Carries the notices a platform display announces about the train itself, next to a delay:
+ * several statements in one running line, so the closing "+++" shows.
+ *
+ * The last two are deliberately topics V3 5X2 leaves out — a scenario that only held notices
+ * a design shows could not catch a design showing everything.
+ */
+const shortFormation: DepartureEntry = departure({
+  id: 'rb-15735',
+  train: { category: 'RB', number: '15735', line: 'RB49' },
+  time: at(7, 6),
+  status: 'delayed',
+  messages: [
+    { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+    { kind: 'qualityNotice', code: '91', topic: 'bicycle', text: 'Fahrradmitnahme nicht möglich' },
+    { kind: 'qualityNotice', code: '70', topic: 'onboardServices', text: 'WLAN nicht verfügbar' },
+    {
+      kind: 'qualityNotice',
+      code: '86',
+      topic: 'reservation',
+      text: 'Gesamter Zug ohne Reservierung',
+    },
+  ],
+  destination: { name: 'Frankfurt(Main)Hbf' },
+  via: [{ name: 'Frankfurt(Main)West' }],
+});
+
 const longName: DepartureEntry = departure({
   id: 'ice-1006',
   train: { category: 'ICE', number: '1006' },
@@ -145,6 +172,15 @@ export const previewScenarios: readonly PreviewScenario[] = [
       current: cancelled,
       following: [ice],
       messages: [{ kind: 'cancellation', code: '80', text: 'Zug fällt aus' }],
+    }),
+  },
+  {
+    id: 'qualitaetsmeldungen',
+    name: 'Fehlender Wagen und Verspätung',
+    board: ready({
+      current: shortFormation,
+      following: [ice, terminating],
+      messages: shortFormation.messages,
     }),
   },
   {

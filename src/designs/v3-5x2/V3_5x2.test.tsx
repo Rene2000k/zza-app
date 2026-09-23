@@ -107,6 +107,80 @@ describe('V3 5X2 design', () => {
     expect(invertedFields(container)).toHaveLength(0);
   });
 
+  it('runs the quality notices whose topic it shows, in the wording the source gave', () => {
+    const container = show(
+      ready({
+        current: departure({ id: 'x' }),
+        messages: [
+          { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+        ],
+      }),
+    );
+    expect(screen.getByText(/Ein Wagen fehlt/)).toBeDefined();
+    expect(invertedFields(container)).toHaveLength(1);
+  });
+
+  it('leaves out the quality topics this display does not announce', () => {
+    const container = show(
+      ready({
+        current: departure({ id: 'x' }),
+        messages: [
+          {
+            kind: 'qualityNotice',
+            code: '70',
+            topic: 'onboardServices',
+            text: 'WLAN nicht verfügbar',
+          },
+          {
+            kind: 'qualityNotice',
+            code: '86',
+            topic: 'reservation',
+            text: 'Gesamter Zug ohne Reservierung',
+          },
+          { kind: 'qualityNotice', code: '98', topic: 'other', text: 'Sonstige Qualitätsmängel' },
+        ],
+      }),
+    );
+    expect(screen.queryByText(/WLAN/)).toBeNull();
+    expect(screen.queryByText(/Reservierung/)).toBeNull();
+    expect(screen.queryByText(/Qualitätsmängel/)).toBeNull();
+    expect(invertedFields(container)).toHaveLength(0);
+  });
+
+  it('runs a quality notice behind a following train too', () => {
+    show(
+      ready({
+        current: departure({ id: 'main' }),
+        following: [
+          departure({
+            id: 'next',
+            messages: [
+              {
+                kind: 'qualityNotice',
+                code: '91',
+                topic: 'bicycle',
+                text: 'Fahrradmitnahme nicht möglich',
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+    expect(screen.getByText(/Fahrradmitnahme nicht möglich/)).toBeDefined();
+  });
+
+  it('runs a quality notice after the delay, closed by +++', () => {
+    show(
+      ready({
+        current: departure({ id: 'x', time: at(9, 10), status: 'delayed' }),
+        messages: [
+          { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+        ],
+      }),
+    );
+    expect(screen.getByText('Verspätung ca. 10 Min. +++ Ein Wagen fehlt +++')).toBeDefined();
+  });
+
   it('draws no white bar where there is nothing to say', () => {
     const container = show(ready({ current: departure({ id: 'quiet' }) }));
     expect(invertedFields(container)).toHaveLength(0);

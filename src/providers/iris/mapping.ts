@@ -1,8 +1,9 @@
 import { parseIrisTimestamp } from './berlinTime';
-import { resolveDelayCause } from './messageCodes';
+import { ALL_TOPICS, resolveDelayCause, resolveQuality, resolveRevocation } from './messageCodes';
 import { isDelayed } from '@/domain/boardEntry';
 import type { BoardEntry, DepartureEntry, EntryStatus, EntryTime, PlatformInfo, TerminatingArrivalEntry } from '@/domain/boardEntry';
-import type { BoardMessage, MessageKind } from '@/domain/message';
+import type { Revocation } from './messageCodes';
+import type { BoardMessage, PlainMessageKind, QualityTopic } from '@/domain/message';
 import type { RouteStop, StationDetails } from '@/domain/station';
 import type { TrainRef } from '@/domain/train';
 
@@ -70,7 +71,7 @@ export const resolvePathNames = (planned: Element, changed: Element | undefined)
   return raw === '' ? [] : raw.split('|');
 };
 
-const himKind = (cat: string): MessageKind => {
+const himKind = (cat: string): PlainMessageKind => {
   if (cat === 'Information') return 'info';
   if (cat === 'Bauarbeiten') return 'constraint';
   // Covers "Störung" and any other/unknown category: real source text, shown as-is
@@ -96,10 +97,60 @@ export const mapMessage = (m: Element): BoardMessage | undefined => {
       ...(priority === null ? {} : { priority: Number(priority) }),
     };
   }
-  // Every other type seen in live data (c, e, f, p, q, r, s) has no confirmed,
-  // display-worthy meaning (ADR-0002 only established d and h) — contributing nothing is
-  // safer than guessing a MessageKind for it.
+  if (type === 'q') {
+    const code = m.getAttribute('c');
+    if (code === null) return undefined;
+    // Unlike a delay cause, an unresolved quality code yields no message at all: without a
+    // topic there is nothing for a design to select it by, and no text to print (ADR-0011).
+    const resolved = resolveQuality(code);
+    if (resolved === undefined) return undefined;
+    return { kind: 'qualityNotice', code, topic: resolved.topic, text: resolved.text };
+  }
+  // Every other type seen in live data (c, e, f, p, r, s) has no confirmed,
+  // display-worthy meaning (ADR-0002 established d and h, ADR-0011 added q) — contributing
+  // nothing is safer than guessing a kind for it.
   return undefined;
+};
+
+/**
+ * When each topic was last declared settled, from the codes that withdraw a notice
+ * (ADR-0011). `allTopics` holds the blanket withdrawal, code 88.
+ *
+ * IRIS states the moment in the `ts` attribute as `YYMMDDhhmm`, zero-padded and fixed width,
+ * so comparing the strings orders them. A withdrawal without a `ts` cannot be placed in the
+ * sequence and is ignored rather than guessed at.
+ */
+type RevokedAt = ReadonlyMap<Revocation, string>;
+
+const revokedAt = (elements: readonly Element[]): RevokedAt => {
+  const latest = new Map<Revocation, string>();
+  for (const m of elements) {
+    if (m.getAttribute('t') !== 'q') continue;
+    const code = m.getAttribute('c');
+    const ts = m.getAttribute('ts');
+    if (code === null || ts === null) continue;
+    const revokes = resolveRevocation(code);
+    if (revokes === undefined) continue;
+    const known = latest.get(revokes);
+    if (known === undefined || ts > known) latest.set(revokes, ts);
+  }
+  return latest;
+};
+
+/**
+ * Whether a withdrawal has overtaken this notice.
+ *
+ * Strictly earlier, not "up to and including": live data shows a stop reporting code 95, then
+ * 88, then 95 again with the same `ts` as the 88. The source withdrew and restated in one
+ * breath, and the restatement has to survive — so only a notice stamped *before* the
+ * withdrawal goes. A notice without a `ts` cannot be ordered against one and stays.
+ */
+const isRevoked = (m: Element, topic: QualityTopic, revoked: RevokedAt): boolean => {
+  const ts = m.getAttribute('ts');
+  if (ts === null) return false;
+  const forTopic = revoked.get(topic);
+  const forAll = revoked.get(ALL_TOPICS);
+  return (forTopic !== undefined && ts < forTopic) || (forAll !== undefined && ts < forAll);
 };
 
 /** `<s>`-level messages plus the governing movement's own, deduplicated by message id. */
@@ -115,10 +166,14 @@ const collectMessages = (ownMessages: readonly Element[], governing: Element | u
       if (id !== null) byId.set(id, m);
     }
   }
+  const elements = [...byId.values()];
+  const revoked = revokedAt(elements);
   const messages: BoardMessage[] = [];
-  for (const m of byId.values()) {
+  for (const m of elements) {
     const mapped = mapMessage(m);
-    if (mapped !== undefined) messages.push(mapped);
+    if (mapped === undefined) continue;
+    if (mapped.kind === 'qualityNotice' && isRevoked(m, mapped.topic, revoked)) continue;
+    messages.push(mapped);
   }
   return messages;
 };
