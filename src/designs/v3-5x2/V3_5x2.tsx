@@ -1,4 +1,5 @@
-import '@fontsource/roboto-condensed/400.css';
+import '@fontsource/roboto-condensed/latin-400.css';
+import '@fontsource/roboto-condensed/latin-ext-400.css';
 import {
   FittedText,
   Ticker,
