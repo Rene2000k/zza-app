@@ -1,8 +1,8 @@
 import { parseIrisTimestamp } from './berlinTime';
-import { resolveDelayCause } from './messageCodes';
+import { resolveDelayCause, resolveQuality } from './messageCodes';
 import { isDelayed } from '@/domain/boardEntry';
 import type { BoardEntry, DepartureEntry, EntryStatus, EntryTime, PlatformInfo, TerminatingArrivalEntry } from '@/domain/boardEntry';
-import type { BoardMessage, MessageKind } from '@/domain/message';
+import type { BoardMessage, PlainMessageKind } from '@/domain/message';
 import type { RouteStop, StationDetails } from '@/domain/station';
 import type { TrainRef } from '@/domain/train';
 
@@ -70,7 +70,7 @@ export const resolvePathNames = (planned: Element, changed: Element | undefined)
   return raw === '' ? [] : raw.split('|');
 };
 
-const himKind = (cat: string): MessageKind => {
+const himKind = (cat: string): PlainMessageKind => {
   if (cat === 'Information') return 'info';
   if (cat === 'Bauarbeiten') return 'constraint';
   // Covers "Störung" and any other/unknown category: real source text, shown as-is
@@ -96,9 +96,18 @@ export const mapMessage = (m: Element): BoardMessage | undefined => {
       ...(priority === null ? {} : { priority: Number(priority) }),
     };
   }
-  // Every other type seen in live data (c, e, f, p, q, r, s) has no confirmed,
-  // display-worthy meaning (ADR-0002 only established d and h) — contributing nothing is
-  // safer than guessing a MessageKind for it.
+  if (type === 'q') {
+    const code = m.getAttribute('c');
+    if (code === null) return undefined;
+    // Unlike a delay cause, an unresolved quality code yields no message at all: without a
+    // topic there is nothing for a design to select it by, and no text to print (ADR-0011).
+    const resolved = resolveQuality(code);
+    if (resolved === undefined) return undefined;
+    return { kind: 'qualityNotice', code, topic: resolved.topic, text: resolved.text };
+  }
+  // Every other type seen in live data (c, e, f, p, r, s) has no confirmed,
+  // display-worthy meaning (ADR-0002 established d and h, ADR-0011 added q) — contributing
+  // nothing is safer than guessing a kind for it.
   return undefined;
 };
 

@@ -1,15 +1,22 @@
+import type { QualityTopic } from '@/domain/message';
+
+/**
+ * Message code → German text, in two tables: delay causes and quality notices.
+ *
+ * IRIS reports both as a bare numeric code (`<m t="d" c="43"/>`, `<m t="q" c="85"/>`),
+ * never as text (ADR-0002). These tables are this project's own translation, since the
+ * source carries none. The codes and wording are cross-checked against the
+ * community-maintained table in derf/Travel-Status-DE-IRIS
+ * (github.com/derf/Travel-Status-DE-IRIS, lib/Travel/Status/DE/IRIS/Result.pm), itself
+ * reconciled against a DB-published list — not an official Deutsche Bahn source, but the
+ * closest available.
+ */
+
 /**
  * Delay-cause code → German text.
  *
- * IRIS reports a delay cause as a bare numeric code (`<m t="d" c="43"/>`), never as
- * text (ADR-0002). This table is this project's own translation, since the source
- * carries none. The codes and wording are cross-checked against the community-maintained
- * table in derf/Travel-Status-DE-IRIS (github.com/derf/Travel-Status-DE-IRIS,
- * lib/Travel/Status/DE/IRIS/Result.pm), itself reconciled against a DB-published list —
- * not an official Deutsche Bahn source, but the closest available.
- *
- * A code missing here must resolve to `undefined`, never to the bare number — see
- * `resolveDelayCause` and the domain rule in `displayableMessages`.
+ * A code missing here must resolve to `undefined` — see `resolveDelayCause` and the domain
+ * rule in `displayableMessages`.
  */
 export const delayCauseCodes: ReadonlyMap<string, string> = new Map(
   Object.entries({
@@ -82,38 +89,75 @@ export const delayCauseCodes: ReadonlyMap<string, string> = new Map(
     '67': 'Behördliche Maßnahme',
     '68': 'Hohes Fahrgastaufkommen verlängert Ein- und Ausstieg',
     '69': 'Zug verkehrt mit verminderter Geschwindigkeit',
-    '70': 'WLAN nicht verfügbar',
-    '71': 'Eingeschränktes WLAN',
-    '72': 'Info-/Entertainmentprogramm nicht verfügbar',
-    '73': 'Heute: Mehrzweckabteil vorne',
-    '74': 'Heute: Mehrzweckabteil hinten',
-    '75': 'Heute: 1. Klasse vorne',
-    '76': 'Heute: 1. Klasse hinten',
-    '77': '1. Klasse fehlt',
-    '78': 'Ersatzverkehr mit Bus ist eingerichtet',
-    '79': 'Mehrzweckabteil fehlt',
-    '80': 'Abweichende Wagenreihung',
-    '81': 'Fahrzeugtausch',
-    '82': 'Mehrere Wagen fehlen',
-    '83': 'Heute ohne fahrzeuggebundene Einstiegshilfe',
-    '84': 'Zug verkehrt richtig gereiht',
-    '85': 'Ein Wagen fehlt',
-    '86': 'Gesamter Zug ohne Reservierung',
-    '87': 'Einzelne Wagen ohne Reservierung',
-    '88': 'Keine Qualitätsmängel',
-    '89': 'Reservierungen sind wieder vorhanden',
-    '90': 'Kein gastronomisches Angebot',
-    '91': 'Fahrradmitnahme nicht möglich',
-    '92': 'Fahrradmitnahme kann nicht garantiert werden',
-    '93': 'Behindertengerechte Einrichtung fehlt',
-    '94': 'Ersatzbewirtschaftung',
-    '95': 'Universaltoilette fehlt',
-    '96': 'Zustieg kann nicht garantiert werden',
-    '97': 'Hohe Auslastung',
-    '98': 'Sonstige Qualitätsmängel',
     '99': 'Verzögerungen im Betriebsablauf',
   }),
 );
 
 /** A code this table does not know must render as nothing, never as the bare number. */
 export const resolveDelayCause = (code: string): string | undefined => delayCauseCodes.get(code);
+
+export interface QualityCode {
+  readonly text: string;
+  readonly topic: QualityTopic;
+}
+
+const quality = (topic: QualityTopic, text: string): QualityCode => ({ topic, text });
+
+/**
+ * Quality code → text and topic (ADR-0011).
+ *
+ * The topic is this project's classification, not something the source publishes: IRIS
+ * states a code and nothing else.
+ *
+ * Codes 84, 88 and 89 are deliberately absent — see `revokingCodes` below.
+ */
+export const qualityCodes: ReadonlyMap<string, QualityCode> = new Map(
+  Object.entries({
+    '70': quality('onboardServices', 'WLAN nicht verfügbar'),
+    '71': quality('onboardServices', 'Eingeschränktes WLAN'),
+    '72': quality('onboardServices', 'Info-/Entertainmentprogramm nicht verfügbar'),
+    '73': quality('coachOrder', 'Heute: Mehrzweckabteil vorne'),
+    '74': quality('coachOrder', 'Heute: Mehrzweckabteil hinten'),
+    '75': quality('coachOrder', 'Heute: 1. Klasse vorne'),
+    '76': quality('coachOrder', 'Heute: 1. Klasse hinten'),
+    '77': quality('missingCoaches', '1. Klasse fehlt'),
+    '78': quality('busReplacement', 'Ersatzverkehr mit Bus ist eingerichtet'),
+    '79': quality('missingCoaches', 'Mehrzweckabteil fehlt'),
+    '80': quality('coachOrder', 'Abweichende Wagenreihung'),
+    '81': quality('coachOrder', 'Fahrzeugtausch'),
+    '82': quality('missingCoaches', 'Mehrere Wagen fehlen'),
+    '83': quality('accessibility', 'Heute ohne fahrzeuggebundene Einstiegshilfe'),
+    '85': quality('missingCoaches', 'Ein Wagen fehlt'),
+    '86': quality('reservation', 'Gesamter Zug ohne Reservierung'),
+    '87': quality('reservation', 'Einzelne Wagen ohne Reservierung'),
+    '90': quality('catering', 'Kein gastronomisches Angebot'),
+    '91': quality('bicycle', 'Fahrradmitnahme nicht möglich'),
+    '92': quality('bicycle', 'Fahrradmitnahme kann nicht garantiert werden'),
+    '93': quality('accessibility', 'Behindertengerechte Einrichtung fehlt'),
+    '94': quality('catering', 'Ersatzbewirtschaftung'),
+    '95': quality('accessibility', 'Universaltoilette fehlt'),
+    '96': quality('occupancy', 'Zustieg kann nicht garantiert werden'),
+    '97': quality('occupancy', 'Hohe Auslastung'),
+    '98': quality('other', 'Sonstige Qualitätsmängel'),
+    '99': quality('other', 'Verzögerungen im Betriebsablauf'),
+  }),
+);
+
+/**
+ * Codes that withdraw an earlier notice rather than making a statement of their own:
+ * 84 "Zug verkehrt richtig gereiht" takes back a coach-order notice, 89 "Reservierungen sind
+ * wieder vorhanden" a reservation notice, and 88 "Keine Qualitätsmängel" all of them.
+ *
+ * They are discarded, and they withdraw nothing (ADR-0011): none of the three appears in the
+ * captured response, so acting on them could only be built against invented data. The guard
+ * is explicit rather than an absence from the table above, so that adding one there by
+ * mistake does not quietly put "Zug verkehrt richtig gereiht" on a platform display.
+ *
+ * Every message carries a `ts` attribute, so the ordering needed to apply them properly is
+ * still available once live data shows the case.
+ */
+const revokingCodes: ReadonlySet<string> = new Set(['84', '88', '89']);
+
+/** A code this table does not know, or one that only withdraws, resolves to nothing. */
+export const resolveQuality = (code: string): QualityCode | undefined =>
+  revokingCodes.has(code) ? undefined : qualityCodes.get(code);
