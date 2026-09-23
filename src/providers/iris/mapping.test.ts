@@ -276,6 +276,119 @@ describe('mapBoardEntries against real captures', () => {
   });
 });
 
+describe('mapBoardEntries: withdrawn quality notices', () => {
+  /**
+   * The shapes here follow live responses for Frankfurt Hbf and Munchen Hbf (2026-09-23),
+   * where code 88 turned out to be common: 17 across the two stations, and on 8 stops it
+   * followed a notice that was still standing.
+   */
+  const planDoc = parseDoc(
+    "<timetable station='Frankfurt(Main)Hbf'>" +
+      '<s id="stop-1">' +
+      '<tl f="N" t="p" o="800640" c="RE" n="4263"/>' +
+      '<dp pt="2609231100" pp="9" l="RE2" ppth="Mainz Hbf|Koblenz Hbf"/>' +
+      '</s></timetable>',
+  );
+
+  const changesWith = (messages: string): Document =>
+    parseDoc(
+      "<timetable station='Frankfurt(Main)Hbf'>" +
+        '<s id="stop-1">' +
+        messages +
+        '</s></timetable>',
+    );
+
+  const quality = (entry: BoardEntry | undefined) =>
+    (entry?.messages ?? []).filter((m) => m.kind === 'qualityNotice');
+
+  it('drops a notice that code 88 withdrew afterwards', () => {
+    // The Frankfurt case: 95 at 10:48, then 88 at 11:05.
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="95" ts="2609231048"/><m id="r2" t="q" c="88" ts="2609231105"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([]);
+  });
+
+  it('keeps a notice the source restated at the moment it withdrew', () => {
+    // The Munchen case: 95 (02:44), 88 (02:46), 95 (02:46). The restatement must survive,
+    // which is why the comparison is strictly earlier rather than up to and including.
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="95" ts="2609230244"/>' +
+        '<m id="r2" t="q" c="88" ts="2609230246"/>' +
+        '<m id="r3" t="q" c="95" ts="2609230246"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([
+      {
+        kind: 'qualityNotice',
+        code: '95',
+        topic: 'accessibility',
+        text: 'Universaltoilette fehlt',
+      },
+    ]);
+  });
+
+  it('keeps a notice the source raised after the withdrawal', () => {
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="88" ts="2609231000"/><m id="r2" t="q" c="85" ts="2609231130"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+    ]);
+  });
+
+  it('lets code 84 withdraw only the coach order, leaving other topics standing', () => {
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="80" ts="2609231000"/>' +
+        '<m id="r2" t="q" c="91" ts="2609231000"/>' +
+        '<m id="r3" t="q" c="84" ts="2609231100"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([
+      {
+        kind: 'qualityNotice',
+        code: '91',
+        topic: 'bicycle',
+        text: 'Fahrradmitnahme nicht möglich',
+      },
+    ]);
+  });
+
+  it('lets code 89 withdraw only reservations', () => {
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="86" ts="2609231000"/>' +
+        '<m id="r2" t="q" c="85" ts="2609231000"/>' +
+        '<m id="r3" t="q" c="89" ts="2609231100"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toEqual([
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+    ]);
+  });
+
+  it('withdraws nothing when the withdrawal carries no timestamp', () => {
+    // Without a ts the withdrawal cannot be placed in the sequence, so guessing is worse
+    // than leaving the notice standing.
+    const fchg = changesWith(
+      '<m id="r1" t="q" c="85" ts="2609231000"/><m id="r2" t="q" c="88"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(quality(entry)).toHaveLength(1);
+  });
+
+  it('leaves delay causes alone, whatever the quality notices say', () => {
+    const fchg = changesWith(
+      '<m id="r1" t="d" c="43" ts="2609231000"/><m id="r2" t="q" c="88" ts="2609231100"/>',
+    );
+    const [entry] = mapBoardEntries([planDoc], fchg);
+    expect(entry?.messages).toEqual([
+      { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
+    ]);
+  });
+});
+
 describe('mapBoardEntries: terminating and originating stops (real Frankfurt fragments)', () => {
   const emptyFchg = parseDoc('<timetable station="Frankfurt(Main)Hbf" eva="8000105"></timetable>');
 

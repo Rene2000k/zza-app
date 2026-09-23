@@ -143,20 +143,24 @@ export const qualityCodes: ReadonlyMap<string, QualityCode> = new Map(
   }),
 );
 
+/** What a revoking code takes back: one topic, or every topic at once. */
+export const ALL_TOPICS = 'allTopics';
+export type Revocation = QualityTopic | typeof ALL_TOPICS;
+
 /**
  * Codes that withdraw an earlier notice rather than making a statement of their own:
  * 84 "Zug verkehrt richtig gereiht" takes back a coach-order notice, 89 "Reservierungen sind
  * wieder vorhanden" a reservation notice, and 88 "Keine Qualitätsmängel" all of them.
  *
- * They are discarded, and they withdraw nothing (ADR-0011): none of the three appears in the
- * captured response, so acting on them could only be built against invented data. The guard
- * is explicit rather than an absence from the table above, so that adding one there by
- * mistake does not quietly put "Zug verkehrt richtig gereiht" on a platform display.
- *
- * Every message carries a `ts` attribute, so the ordering needed to apply them properly is
- * still available once live data shows the case.
  */
-const revokingCodes: ReadonlySet<string> = new Set(['84', '88', '89']);
+const revokingCodes: ReadonlyMap<string, Revocation> = new Map<string, Revocation>([
+  ['84', 'coachOrder'],
+  ['88', ALL_TOPICS],
+  ['89', 'reservation'],
+]);
+
+/** What this code withdraws, or `undefined` if it withdraws nothing. */
+export const resolveRevocation = (code: string): Revocation | undefined => revokingCodes.get(code);
 
 /** A code this table does not know, or one that only withdraws, resolves to nothing. */
 export const resolveQuality = (code: string): QualityCode | undefined =>

@@ -92,32 +92,25 @@ the wording the real displays use. The topic is therefore used for _selection_ o
 that wants "Keine Fahrradmitnahme" writes that against the topic without any provider change, which
 is the property this model exists for.
 
-**Cancelling codes are discarded, not applied.** Three codes revoke earlier ones: 84 ("Zug verkehrt
-richtig gereiht") cancels coach-order messages, 89 ("Reservierungen sind wieder vorhanden") cancels
-reservation messages, and 88 ("Keine Qualitätsmängel") cancels all of them. They are mapped to
-nothing and remove nothing. This is a deliberate limitation, not an oversight: the captured response
-contains none of the three, so the revoking behaviour would have had to be built against invented
-data.
-
-A live check made the same day this was accepted has since overtaken that reasoning, and is recorded
-here because it changes what the limitation costs rather than what was decided. Code 88 is not rare:
-Frankfurt Hbf carried 11 and München Hbf 6 on 2026-09-23, and on 8 stops across the two it followed
-an earlier notice that is still standing. One Frankfurt stop reported 95 ("Universaltoilette fehlt")
-at 10:48 and 88 at 11:05; a München stop reported 90 ("Kein gastronomisches Angebot") at 11:11 and
-88 at 17:22. Under this decision both keep running. The same data also confirms that ordering by
-`ts` is the only correct way to apply them: one München stop reads 95 (02:44) → 88 (02:46) → 95
-(02:46), so a rule that simply cleared the topic would drop a notice the source had just restated.
+**Cancelling codes withdraw the notices they overtake.** Three codes revoke earlier ones: 84 ("Zug
+verkehrt richtig gereiht") withdraws coach-order notices, 89 ("Reservierungen sind wieder vorhanden")
+reservation notices, and 88 ("Keine Qualitätsmängel") all of them. None of the three ever becomes a
+message itself; what each does is silence the notices of its topic that are stamped **strictly
+earlier** in the `ts` attribute every message carries.
 
 **Consequences.** A design gains a message class it can filter by subject, and adding a code means
 one row in the provider's table. What becomes harder: the topic union is part of the domain model,
 so widening it touches every design that switches over topics exhaustively.
 
-The failure mode is a stale notice, and it is no longer hypothetical: because cancelling codes are
-discarded, a train that IRIS first reports as missing a facility and then reports as free of defects
-keeps showing the notice until the original message itself disappears from the response. The
-measurements above put that at 8 stops across two stations in a single sample, one of them stale by
-more than six hours. The fallback is to apply the cancellations in `ts` order per topic, which needs
-no model change — only the provider.
+The failure mode to watch is now the opposite one: a notice that disappears when it should have
+stayed. Withdrawal rests on the reading that 84, 88 and 89 revoke a *topic* — that is this project's
+interpretation of codes the source ships without documentation, and 84 and 89 have not been seen in
+live data at all, so only 88 is observed behaviour. If a display ever goes quiet about a fault that
+is plainly still there, this is the first place to look, and the way back is to narrow what each code
+withdraws, or to stop applying it, in the provider alone.
+
+Withdrawal is scoped to one stop: it works over the messages collected for that entry, which is what
+IRIS's own sequence covers. A notice withdrawn at one station says nothing about another.
 
 The second thing to watch is how the two tables are kept. They are per message type, so a code the
 source starts sending under both types needs a row in each; code 99 already does. A code missing
