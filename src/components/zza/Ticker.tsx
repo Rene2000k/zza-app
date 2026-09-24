@@ -8,8 +8,9 @@ export interface TickerProps {
   /** Placed between two messages; the reference displays use " - " or " +++ ". */
   readonly separator?: string;
   /**
-   * Also end the line with the separator once it holds more than one message, so a repeating
-   * line reads "A +++ B +++" before it starts over. A single message stays bare.
+   * Also end the line with the separator while it runs, so a repeating line reads
+   * "A +++ B +++" before it starts over — a single long message too. A line that stands
+   * still stays bare.
    */
   readonly closeWithSeparator?: boolean;
   /** Travel in canvas pixels per second. */
@@ -33,11 +34,14 @@ export const Ticker = ({
 }: TickerProps) => {
   const texts = displayableMessages(messages).map((message) => message.text);
   if (texts.length === 0) return null;
-  const closing = closeWithSeparator && texts.length > 1 ? separator.trimEnd() : '';
+  const closing = separator.trimEnd();
+  // A closed line runs straight into its next round with the separator's own trailing space,
+  // not with the marquee's default gap, so "zwei +++ eins" reads like any other join.
+  const close = closeWithSeparator ? { closing, gap: separator.slice(closing.length) } : {};
   return (
     <div role="marquee">
-      <Marquee {...(speed === undefined ? {} : { speed })}>
-        {texts.join(separator) + closing}
+      <Marquee {...(speed === undefined ? {} : { speed })} {...close}>
+        {texts.join(separator)}
       </Marquee>
     </div>
   );

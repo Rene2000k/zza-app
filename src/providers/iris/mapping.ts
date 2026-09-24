@@ -44,14 +44,25 @@ export const resolveTime = (planned: Element, changed: Element | undefined): Ent
   };
 };
 
+/**
+ * The platform a label belongs to, without the section range IRIS appends at stations
+ * that split long platforms: Köln Hbf writes "4 D-G", Hamburg Hbf "13A-C". Such a train
+ * still stands at platform 4 or 13 and belongs on that platform's display. Only a range
+ * is stripped — a single letter ("1a") or a suffix like "3West" names a platform of its
+ * own and stays.
+ */
+const mainPlatform = (label: string | null): string | undefined =>
+  label === null ? undefined : label.replace(/[A-Z]-[A-Z]$/i, '').trimEnd();
+
 export const resolvePlatform = (planned: Element, changed: Element | undefined): PlatformInfo => {
-  const plannedPlatform = planned.getAttribute('pp') ?? undefined;
-  const changedPlatform = changed?.getAttribute('cp') ?? undefined;
+  const plannedPlatform = mainPlatform(planned.getAttribute('pp'));
+  const changedPlatform = mainPlatform(changed?.getAttribute('cp') ?? null);
   const actual = changedPlatform ?? plannedPlatform;
   return {
     ...(plannedPlatform === undefined ? {} : { planned: plannedPlatform }),
     ...(actual === undefined ? {} : { actual }),
-    changed: changedPlatform !== undefined,
+    // Moving between sections of one platform ("4 A-C" → "4 D-G") is no platform change.
+    changed: changedPlatform !== undefined && changedPlatform !== plannedPlatform,
   };
 };
 
@@ -216,10 +227,17 @@ const collectMessages = (ownMessages: readonly Element[], governing: Element | u
   return messages;
 };
 
+/**
+ * IRIS gives Flixtrain its line as a bare number (`l="20"`), which a display would print
+ * alone. Flixtrain is long-distance traffic and is shown like an ICE — "FLX 1801" — so its
+ * line is dropped; no other long-distance category carries one in the data.
+ */
+const hasLineLabel = (category: string): boolean => category !== 'FLX';
+
 const mapTrainRef = (category: string, number: string, line: string | undefined, operator: string | undefined): TrainRef => ({
   category,
   number,
-  ...(line === undefined ? {} : { line }),
+  ...(line === undefined || !hasLineLabel(category) ? {} : { line }),
   ...(operator === undefined ? {} : { operator }),
 });
 

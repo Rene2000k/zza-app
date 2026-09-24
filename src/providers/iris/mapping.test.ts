@@ -79,6 +79,45 @@ describe('resolvePlatform', () => {
     );
     expect(resolvePlatform(planned, changed)).toEqual({ planned: '1', actual: '3', changed: true });
   });
+
+  it('reduces a section range to its platform — Köln Hbf and Hamburg Hbf, 2026-09-24', () => {
+    const koeln = parseElement('<dp pt="2609241738" pp="4 D-G" l="RB27" fb="RB27"/>');
+    const hamburg = parseElement('<dp pt="2609241715" pp="13A-C" l="RE4" fb="RE4"/>');
+    expect(resolvePlatform(koeln, undefined)).toEqual({
+      planned: '4',
+      actual: '4',
+      changed: false,
+    });
+    expect(resolvePlatform(hamburg, undefined)).toEqual({
+      planned: '13',
+      actual: '13',
+      changed: false,
+    });
+  });
+
+  it('keeps a single-letter platform as a platform of its own', () => {
+    expect(resolvePlatform(parseElement('<dp pt="2609101610" pp="1a"/>'), undefined)).toEqual({
+      planned: '1a',
+      actual: '1a',
+      changed: false,
+    });
+  });
+
+  it('does not count a section assignment as a platform change — ICE 317, Köln Hbf', () => {
+    const planned = parseElement('<dp pt="2609241818" pp="5" fb="ICE 317"/>');
+    const changed = parseElement('<dp cp="5 A-C" pp="5" ct="2609241903" pt="2609241818"/>');
+    expect(resolvePlatform(planned, changed)).toEqual({
+      planned: '5',
+      actual: '5',
+      changed: false,
+    });
+  });
+
+  it('still marks a move to a sectioned platform as a change', () => {
+    const planned = parseElement('<dp pt="2609241738" pp="4 D-G"/>');
+    const changed = parseElement('<dp cp="5 D-G" ct="2609241938" l="RB38"/>');
+    expect(resolvePlatform(planned, changed)).toEqual({ planned: '4', actual: '5', changed: true });
+  });
 });
 
 describe('resolveStatus', () => {
@@ -567,6 +606,20 @@ describe('mapBoardEntries: terminating and originating stops (real Frankfurt fra
     // Route stops carry no EVA number: IRIS names them only.
     expect(terminating.origin).toEqual({ name: 'Koblenz Hbf' });
     expect(terminating.time.planned).toEqual(new Date('2026-09-10T14:51:00Z'));
+  });
+
+  it('names a Flixtrain like an ICE, without its bare line number — FLX 1801, Hamburg Hbf', () => {
+    const planDoc = parseDoc(
+      "<timetable station='Hamburg Hbf'>" +
+        '<s id="-4956399162740083947-2609250850-1">' +
+        '<tl t="p" o="FLX20" c="FLX" n="1801"/>' +
+        '<dp pt="2609250850" pp="14" l="20" fb="FLX 1801" ' +
+        'ppth="Hamburg-Harburg|Bremen Hbf|Osnabrück Hbf|Münster(Westf)Hbf|Gelsenkirchen Hbf|' +
+        'Oberhausen Hbf|Duisburg Hbf|Düsseldorf Hbf|Köln Hbf"/>' +
+        '</s></timetable>',
+    );
+    const [entry] = mapBoardEntries([planDoc], emptyFchg);
+    expect(entry?.train).toEqual({ category: 'FLX', number: '1801', operator: 'FLX20' });
   });
 
   it('maps a departure-only stop as an originating departure', () => {

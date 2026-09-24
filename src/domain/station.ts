@@ -34,10 +34,10 @@ export interface StationDetails extends StationRef {
 /**
  * Two platform labels denote the same platform.
  *
- * Labels are not comparable as plain strings: sources write "9", " 9" or "Gl. 9",
- * and a section suffix ("9a") still means platform 9. Comparison is therefore
- * case-insensitive, ignores whitespace and a leading "Gl."/"Gleis", and treats a
- * trailing section letter as part of the platform.
+ * Labels are not comparable as plain strings: sources write "9", " 9" or "Gl. 9".
+ * Comparison is therefore case-insensitive and ignores whitespace and a leading
+ * "Gl."/"Gleis". A trailing letter ("1a") names a platform of its own and is kept;
+ * section ranges ("4 D-G") are the provider's to reduce to the platform.
  */
 export const isSamePlatform = (a: string | undefined, b: string | undefined): boolean => {
   if (a === undefined || b === undefined) return false;

@@ -170,7 +170,7 @@ describe('V3 5X2 design', () => {
     expect(screen.getByText(/Fahrradmitnahme nicht möglich/)).toBeDefined();
   });
 
-  it('runs a quality notice after the delay, closed by +++', () => {
+  it('runs a quality notice after the delay, separated by +++', () => {
     show(
       ready({
         current: departure({ id: 'x', time: at(9, 10), status: 'delayed' }),
@@ -179,7 +179,7 @@ describe('V3 5X2 design', () => {
         ],
       }),
     );
-    expect(screen.getByText('Verspätung ca. 10 Min. +++ Ein Wagen fehlt +++')).toBeDefined();
+    expect(screen.getByText('Verspätung ca. 10 Min. +++ Ein Wagen fehlt')).toBeDefined();
   });
 
   it('names every skipped stop in the running line', () => {
@@ -269,7 +269,7 @@ describe('V3 5X2 design', () => {
     expect(invertedFields(container)).toHaveLength(0);
   });
 
-  it('runs every notice for the main train in one line, separated and closed by +++', () => {
+  it('runs every notice for the main train in one line, separated by +++', () => {
     show(
       ready({
         current: departure({
@@ -280,7 +280,7 @@ describe('V3 5X2 design', () => {
         }),
       }),
     );
-    const line = screen.getByText('Verspätung ca. 10 Min. +++ Heute von Gleis 4 +++');
+    const line = screen.getByText('Verspätung ca. 10 Min. +++ Heute von Gleis 4');
     expect(line.closest('[data-inverted]')?.getAttribute('data-inverted')).toBe('true');
   });
 
@@ -325,6 +325,11 @@ describe('V3 5X2 design', () => {
   it('marks a cancelled following train in its own running line', () => {
     show(ready({ following: [departure({ id: 'x', status: 'cancelled' })] }));
     expect(screen.getByText('Fällt aus')).toBeDefined();
+  });
+
+  it('gives a cancelled following train no deviation field', () => {
+    show(ready({ following: [departure({ id: 'x', time: at(20, 7), status: 'cancelled' })] }));
+    expect(screen.queryByText('+7')).toBeNull();
   });
 
   it('shows two following trains and no more', () => {
