@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  deriveRouteChanges,
   mapBoardEntries,
   mapMessage,
   mapStationDetails,
@@ -276,6 +277,108 @@ describe('mapBoardEntries against real captures', () => {
   });
 });
 
+describe('deriveRouteChanges', () => {
+  /**
+   * Every case here is a real route pair taken from paired plan/fchg captures — the shapes a
+   * busy station actually produces in one evening.
+   */
+  const names = (changes: ReturnType<typeof deriveRouteChanges>, kind: string): string[] =>
+    changes.find((c) => c.kind === kind)?.stops.map((s) => s.name) ?? [];
+
+  it('reports a stop the train passes through without calling', () => {
+    const planned = ['Frankfurt(Main)Süd', 'Offenbach(Main)Hbf', 'Hanau Hbf', 'Gelnhausen'];
+    const changed = ['Frankfurt(Main)Süd', 'Hanau Hbf', 'Gelnhausen'];
+    expect(deriveRouteChanges(planned, changed)).toEqual([
+      { kind: 'skippedStops', stops: [{ name: 'Offenbach(Main)Hbf' }] },
+    ]);
+  });
+
+  it('reports stops dropped from the front as skipped, not as ending early', () => {
+    // The train still runs to the end; it just no longer calls at the first two stops. A
+    // "head" drop on a departure path is the same case as a drop in the middle.
+    const planned = ['Wunstorf', 'Neustadt am Rübenberge', 'Nienburg(Weser)', 'Eystrup'];
+    const changed = ['Nienburg(Weser)', 'Eystrup'];
+    const changes = deriveRouteChanges(planned, changed);
+    expect(changes.map((c) => c.kind)).toEqual(['skippedStops']);
+    expect(names(changes, 'skippedStops')).toEqual(['Wunstorf', 'Neustadt am Rübenberge']);
+  });
+
+  it('reports a trailing run as ending early', () => {
+    const planned = ['Wunstorf', 'Poggenhagen', 'Neustadt am Rübenberge', 'Eilvese', 'Hagen(Han)', 'Linsburg', 'Nienburg(Weser)'];
+    const changed = ['Wunstorf', 'Poggenhagen', 'Neustadt am Rübenberge'];
+    const changes = deriveRouteChanges(planned, changed);
+    expect(changes.map((c) => c.kind)).toEqual(['endsEarly']);
+    // No spurious skippedStops, and the last name is the terminus the timetable promised.
+    expect(names(changes, 'endsEarly')).toEqual(['Eilvese', 'Hagen(Han)', 'Linsburg', 'Nienburg(Weser)']);
+  });
+
+  it('reports an inserted stop', () => {
+    const planned = ['Hannover Hbf', 'Celle', 'Hamburg Hbf'];
+    const changed = ['Hannover Hbf', 'Celle', 'Hamburg-Harburg', 'Hamburg Hbf'];
+    expect(deriveRouteChanges(planned, changed)).toEqual([
+      { kind: 'additionalStops', stops: [{ name: 'Hamburg-Harburg' }] },
+    ]);
+  });
+
+  it('reports a diversion as skipped plus additional, not as a case of its own', () => {
+    const planned = ['Dortmund Hbf', 'Gelsenkirchen Hbf', 'Duisburg Hbf', 'Düsseldorf Hbf', 'Köln Hbf'];
+    const changed = ['Dortmund Hbf', 'Solingen Hbf', 'Köln Hbf'];
+    const changes = deriveRouteChanges(planned, changed);
+    expect(changes.map((c) => c.kind)).toEqual(['skippedStops', 'additionalStops']);
+    expect(names(changes, 'skippedStops')).toEqual(['Gelsenkirchen Hbf', 'Duisburg Hbf', 'Düsseldorf Hbf']);
+    expect(names(changes, 'additionalStops')).toEqual(['Solingen Hbf']);
+    // The destination is untouched, so nothing may claim the train ends early.
+    expect(names(changes, 'endsEarly')).toEqual([]);
+  });
+
+  it('names every skipped stop, however many', () => {
+    const planned = ['Nienburg(Weser)', 'Verden(Aller)', 'Bremen Hbf', 'Delmenhorst', 'Hude', 'Oldenburg(Oldb)Hbf', 'Bad Zwischenahn', 'Westerstede-Ocholt', 'Augustfehn', 'Leer(Ostfriesl)', 'Emden Hbf', 'Norddeich'];
+    const changed = ['Osnabrück Hbf', 'Leer(Ostfriesl)', 'Emden Hbf', 'Norddeich'];
+    const changes = deriveRouteChanges(planned, changed);
+    expect(names(changes, 'skippedStops')).toHaveLength(9);
+    expect(names(changes, 'additionalStops')).toEqual(['Osnabrück Hbf']);
+  });
+
+  it('separates stops skipped along the way from the run it no longer reaches', () => {
+    const planned = ['A', 'B', 'C', 'D', 'E'];
+    const changed = ['A', 'C'];
+    expect(deriveRouteChanges(planned, changed)).toEqual([
+      { kind: 'skippedStops', stops: [{ name: 'B' }] },
+      { kind: 'endsEarly', stops: [{ name: 'D' }, { name: 'E' }] },
+    ]);
+  });
+
+  it('does not also call the new terminus an additional stop', () => {
+    // A route replaced outright, with no station in common. Reporting the new terminus as an
+    // extra call as well would have the display say "Heute nur bis X" and "Heute mit
+    // zusätzlichem Halt in X" at once.
+    const changes = deriveRouteChanges(['Bremen Hbf'], ['Minden(Westf)']);
+    expect(changes).toEqual([{ kind: 'endsEarly', stops: [{ name: 'Bremen Hbf' }] }]);
+  });
+
+  it('still reports an added stop that is not the new terminus', () => {
+    const changes = deriveRouteChanges(['A', 'B', 'C'], ['A', 'X', 'B']);
+    expect(changes).toEqual([
+      { kind: 'endsEarly', stops: [{ name: 'C' }] },
+      { kind: 'additionalStops', stops: [{ name: 'X' }] },
+    ]);
+  });
+
+  it('keeps a stop beyond the planned destination as an additional stop', () => {
+    // Nothing is dropped here, so the train is not ending early and the extra call stands.
+    expect(deriveRouteChanges(['A', 'B'], ['A', 'B', 'C'])).toEqual([
+      { kind: 'additionalStops', stops: [{ name: 'C' }] },
+    ]);
+  });
+
+  it('reports nothing when the route is unchanged, or when either path is missing', () => {
+    expect(deriveRouteChanges(['A', 'B'], ['A', 'B'])).toEqual([]);
+    // No cpth at all means the source reported no deviation.
+    expect(deriveRouteChanges(['A', 'B'], [])).toEqual([]);
+    expect(deriveRouteChanges([], ['A'])).toEqual([]);
+  });
+});
+
 describe('mapBoardEntries: withdrawn quality notices', () => {
   /**
    * The shapes here follow live responses for Frankfurt Hbf and Munchen Hbf (2026-09-23),
@@ -386,6 +489,54 @@ describe('mapBoardEntries: withdrawn quality notices', () => {
     expect(entry?.messages).toEqual([
       { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
     ]);
+  });
+});
+
+describe('mapBoardEntries: route changes', () => {
+  const planDoc = parseDoc(
+    "<timetable station='Frankfurt(Main)Hbf'>" +
+      '<s id="stop-1">' +
+      '<tl f="N" t="p" o="800640" c="RE" n="4534"/>' +
+      '<dp pt="2609231100" pp="9" l="RE50" ppth="Frankfurt(Main)Süd|Offenbach(Main)Hbf|Hanau Hbf|Gelnhausen"/>' +
+      '</s></timetable>',
+  );
+
+  const changesWith = (dp: string): Document =>
+    parseDoc("<timetable station='Frankfurt(Main)Hbf'><s id=\"stop-1\">" + dp + '</s></timetable>');
+
+  it('derives the change and leaves the via line reporting the route actually taken', () => {
+    const fchg = changesWith('<dp cpth="Frankfurt(Main)Süd|Hanau Hbf|Gelnhausen" ct="2609231100"/>');
+    const entry = asDeparture(mapBoardEntries([planDoc], fchg)[0]);
+    expect(entry?.routeChanges).toEqual([
+      { kind: 'skippedStops', stops: [{ name: 'Offenbach(Main)Hbf' }] },
+    ]);
+    // ADR-0005 governs the via line; this decision adds a statement, it does not alter it.
+    expect(entry?.via.map((s) => s.name)).toEqual(['Frankfurt(Main)Süd', 'Hanau Hbf']);
+    expect(entry?.destination.name).toBe('Gelnhausen');
+  });
+
+  it('reports no route change for a cancelled departure that still carries a differing path', () => {
+    // A good number of cancelled departures look exactly like this. Keying on an empty cpth
+    // instead of on cs would announce skipped stops for a train that does not run.
+    const fchg = changesWith('<dp cpth="Frankfurt(Main)Süd|Gelnhausen" cs="c" clt="2609220203"/>');
+    const entry = asDeparture(mapBoardEntries([planDoc], fchg)[0]);
+    expect(entry?.status).toBe('cancelled');
+    expect(entry?.routeChanges).toEqual([]);
+  });
+
+  it('reports no route change for a cancelled departure whose path was wiped', () => {
+    const fchg = changesWith('<dp cpth="" cs="c" clt="2609220203"/>');
+    const entry = asDeparture(mapBoardEntries([planDoc], fchg)[0]);
+    expect(entry?.status).toBe('cancelled');
+    expect(entry?.routeChanges).toEqual([]);
+    // The emptied path still falls back to the plan, so the destination survives.
+    expect(entry?.destination.name).toBe('Gelnhausen');
+  });
+
+  it('reports no route change when the source sent no changed path at all', () => {
+    const fchg = changesWith('<dp ct="2609231105"/>');
+    const entry = asDeparture(mapBoardEntries([planDoc], fchg)[0]);
+    expect(entry?.routeChanges).toEqual([]);
   });
 });
 

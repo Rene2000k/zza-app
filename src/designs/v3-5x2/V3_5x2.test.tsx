@@ -17,6 +17,7 @@ const departure = (overrides: Partial<DepartureEntry> & { id: string }): Departu
   time: at(4),
   status: 'onTime',
   messages: [],
+  routeChanges: [],
   destination: { name: 'Stuttgart Hbf' },
   via: [],
   ...overrides,
@@ -179,6 +180,88 @@ describe('V3 5X2 design', () => {
       }),
     );
     expect(screen.getByText('Verspätung ca. 10 Min. +++ Ein Wagen fehlt +++')).toBeDefined();
+  });
+
+  it('names every skipped stop in the running line', () => {
+    show(
+      ready({
+        current: departure({
+          id: 'x',
+          routeChanges: [
+            {
+              kind: 'skippedStops',
+              stops: [{ name: 'Gelsenkirchen Hbf' }, { name: 'Duisburg Hbf' }],
+            },
+          ],
+        }),
+      }),
+    );
+    expect(screen.getByText(/Heute ohne Halt in Gelsenkirchen Hbf, Duisburg Hbf/)).toBeDefined();
+  });
+
+  it('words a shortened run with the destination the train really reaches', () => {
+    show(
+      ready({
+        current: departure({
+          id: 'x',
+          destination: { name: 'Neustadt am Rübenberge' },
+          routeChanges: [
+            { kind: 'endsEarly', stops: [{ name: 'Linsburg' }, { name: 'Nienburg(Weser)' }] },
+          ],
+        }),
+      }),
+    );
+    expect(screen.getByText(/Heute nur bis Neustadt am Rübenberge/)).toBeDefined();
+    // The stops it no longer reaches are carried, but this design does not read them out.
+    expect(screen.queryByText(/Nienburg/)).toBeNull();
+  });
+
+  it('announces an additional stop', () => {
+    show(
+      ready({
+        current: departure({
+          id: 'x',
+          routeChanges: [{ kind: 'additionalStops', stops: [{ name: 'Hamburg-Harburg' }] }],
+        }),
+      }),
+    );
+    expect(screen.getByText(/Heute mit zusätzlichem Halt in Hamburg-Harburg/)).toBeDefined();
+  });
+
+  it('runs a diversion as two statements in one line', () => {
+    show(
+      ready({
+        current: departure({
+          id: 'x',
+          routeChanges: [
+            { kind: 'skippedStops', stops: [{ name: 'Duisburg Hbf' }] },
+            { kind: 'additionalStops', stops: [{ name: 'Solingen Hbf' }] },
+          ],
+        }),
+      }),
+    );
+    expect(
+      screen.getByText(
+        'Heute ohne Halt in Duisburg Hbf +++ Heute mit zusätzlichem Halt in Solingen Hbf +++',
+      ),
+    ).toBeDefined();
+  });
+
+  it('runs a route change behind a following train too', () => {
+    show(
+      ready({
+        current: departure({ id: 'main' }),
+        following: [
+          departure({
+            id: 'next',
+            routeChanges: [
+              { kind: 'skippedStops', stops: [{ name: 'Offenbach(Main)Hbf' }] },
+            ],
+          }),
+        ],
+      }),
+    );
+    expect(screen.getByText(/Heute ohne Halt in Offenbach\(Main\)Hbf/)).toBeDefined();
   });
 
   it('draws no white bar where there is nothing to say', () => {

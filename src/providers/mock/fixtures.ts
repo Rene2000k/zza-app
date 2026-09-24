@@ -74,6 +74,7 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
         { evaNumber: '8000150', name: 'Frankfurt(M) Flughafen Fernbf' },
         { evaNumber: '8000244', name: 'Mannheim Hbf' },
       ],
+      routeChanges: [],
       origin: { evaNumber: '8002549', name: 'Hamburg-Altona' },
     },
     {
@@ -89,6 +90,7 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
       ],
       destination: { evaNumber: '8000236', name: 'Frankfurt(Main)Hbf tief' },
       via: [{ evaNumber: '8000244', name: 'Mannheim Hbf' }],
+      routeChanges: [],
     },
     {
       // Platform change: the display has to mark it, and a platform filter must react.
@@ -101,6 +103,7 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
       messages: [{ kind: 'info', code: '900', text: 'Gleiswechsel' }],
       destination: { evaNumber: '8000152', name: 'Hannover Hbf' },
       via: [{ evaNumber: '8000149', name: 'Fulda' }, { evaNumber: '8000191', name: 'Kassel-Wilhelmshöhe' }],
+      routeChanges: [],
     },
     {
       // Left platform 9 for platform 4 (ADR-0006): the platform-9 board must still show
@@ -116,6 +119,7 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
       messages: [{ kind: 'info', code: '900', text: 'Gleiswechsel' }],
       destination: { evaNumber: '8000068', name: 'Gießen' },
       via: [{ evaNumber: '8000760', name: 'Bad Vilbel' }],
+      routeChanges: [],
     },
     {
       // Ends here (ADR-0003): origin instead of destination, no via stops.
@@ -139,6 +143,7 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
       messages: [{ kind: 'cancellation', code: '80', text: 'Zug fällt aus' }],
       destination: { evaNumber: '8000031', name: 'Bamberg' },
       via: [],
+      routeChanges: [],
     },
     {
       // Long name plus an unresolved cause code: tests truncation and the rule that an
@@ -156,6 +161,7 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
         { evaNumber: '8000036', name: 'Braunschweig Hbf' },
         { evaNumber: '8010224', name: 'Berlin Südkreuz' },
       ],
+      routeChanges: [],
     },
   ];
 };

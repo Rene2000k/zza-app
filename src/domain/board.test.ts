@@ -24,6 +24,7 @@ const departure = (id: string, offsetMinutes: number, delay = 0): BoardEntry => 
   time: time(offsetMinutes, delay),
   status: delay === 0 ? 'onTime' : 'delayed',
   messages: [],
+  routeChanges: [],
   destination: { evaNumber: '8000096', name: 'Stuttgart Hbf' },
   via: [],
 });

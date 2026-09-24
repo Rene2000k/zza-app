@@ -15,6 +15,7 @@ import { selectViaStops } from '@/domain/via';
 import styles from './v3-5x2.module.css';
 import type { BoardEntry, EntryTime } from '@/domain/boardEntry';
 import type { BoardMessage, MessageKind, PlainMessageKind, QualityTopic } from '@/domain/message';
+import type { RouteChange } from '@/domain/routeChange';
 import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
 export interface V3_5x2Props {
@@ -187,6 +188,7 @@ const mainHints = (board: ZzaBoardViewModel): readonly BoardMessage[] => {
           ...statusNotices(current, board.messages, 'Zug fällt aus'),
           ...(current.kind === 'terminatingArrival' ? [notice('Fahrt endet hier')] : []),
           ...delayNotice(current),
+          ...routeNotices(current),
           ...shown(board.messages),
           ...platformChange(current, board.platform),
         ]);
@@ -197,6 +199,7 @@ const followingHints = (entry: BoardEntry): readonly BoardMessage[] =>
   unique([
     ...statusNotices(entry, entry.messages, 'Fällt aus'),
     ...(entry.kind === 'terminatingArrival' ? [notice('Zug endet hier')] : []),
+    ...routeNotices(entry),
     ...shown(entry.messages),
   ]);
 
@@ -233,6 +236,31 @@ const platformChange = (entry: BoardEntry, platform: string | undefined): BoardM
 };
 
 /** A quality notice is picked by its subject, every other message by its kind. */
+/**
+ * What the display says about a route that differs from the timetable (ADR-0012).
+ *
+ * The model states the case and the stops; the wording is this design's, after the real V3
+ * displays. Every affected station is named, however many there are — that is what the
+ * original does, and shortening the list would drop the one name a traveller is waiting for.
+ * "Heute nur bis" takes the destination from the entry, which already names where the train
+ * really ends.
+ */
+const routeNotices = (entry: BoardEntry): BoardMessage[] => {
+  if (entry.kind !== 'departure') return [];
+  return entry.routeChanges.map((change) => notice(routeText(change, entry.destination.name)));
+};
+
+const routeText = (change: RouteChange, destinationName: string): string => {
+  if (change.kind === 'endsEarly') return `Heute nur bis ${destinationName}`;
+  const stops = stopNames(change);
+  return change.kind === 'skippedStops'
+    ? `Heute ohne Halt in ${stops}`
+    : `Heute mit zusätzlichem Halt in ${stops}`;
+};
+
+const stopNames = (change: RouteChange): string =>
+  change.stops.map((stop) => stop.name).join(', ');
+
 const shown = (messages: readonly BoardMessage[]): BoardMessage[] =>
   messages.filter((message) =>
     message.kind === 'qualityNotice'

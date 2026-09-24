@@ -1,4 +1,5 @@
 import type { BoardMessage } from './message';
+import type { RouteChange } from './routeChange';
 import type { RouteStop } from './station';
 import type { TrainFormation } from './formation';
 import type { TrainRef } from './train';
@@ -32,6 +33,12 @@ export interface DepartureEntry extends BoardEntryBase {
   readonly via: readonly RouteStop[];
   /** Where the train came from, when known. Extra information, never the headline. */
   readonly origin?: RouteStop;
+  /**
+   * How today's route differs from the timetable (ADR-0012). Empty for the great majority of
+   * entries. `destination` and `via` already describe the route actually taken; this says
+   * what changed about it, which they cannot.
+   */
+  readonly routeChanges: readonly RouteChange[];
 }
 
 export interface TerminatingArrivalEntry extends BoardEntryBase {

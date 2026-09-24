@@ -32,6 +32,7 @@ const departure = (overrides: Partial<DepartureEntry> & { id: string }): Departu
   time: at(4),
   status: 'onTime',
   messages: [],
+  routeChanges: [],
   destination: { name: 'Stuttgart Hbf' },
   via: [{ name: 'Frankfurt(M) Flughafen Fernbf' }, { name: 'Mannheim Hbf' }],
   ...overrides,
@@ -133,6 +134,49 @@ const shortFormation: DepartureEntry = departure({
   via: [{ name: 'Frankfurt(Main)West' }],
 });
 
+/**
+ * A diversion: same destination, different way there. It reaches the display as skipped stops
+ * beside an additional one, which is all a platform display has to say about it (ADR-0012).
+ */
+const diverted: DepartureEntry = departure({
+  id: 'ice-544',
+  train: { category: 'ICE', number: '544' },
+  time: at(5, 8),
+  status: 'delayed',
+  destination: { name: 'Köln Hbf' },
+  via: [{ name: 'Hamm(Westf)Hbf' }, { name: 'Dortmund Hbf' }, { name: 'Solingen Hbf' }],
+  routeChanges: [
+    {
+      kind: 'skippedStops',
+      stops: [{ name: 'Gelsenkirchen Hbf' }, { name: 'Duisburg Hbf' }, { name: 'Düsseldorf Hbf' }],
+    },
+    { kind: 'additionalStops', stops: [{ name: 'Solingen Hbf' }] },
+  ],
+});
+
+/**
+ * A train turning short: the destination field already names where it really ends, and the
+ * running line says so in words.
+ */
+const turnsShort: DepartureEntry = departure({
+  id: 'sbh-34232',
+  train: { category: 'S', number: '34232', line: 'S1' },
+  time: at(10),
+  destination: { name: 'Neustadt am Rübenberge' },
+  via: [{ name: 'Seelze' }, { name: 'Wunstorf' }, { name: 'Poggenhagen' }],
+  routeChanges: [
+    {
+      kind: 'endsEarly',
+      stops: [
+        { name: 'Eilvese' },
+        { name: 'Hagen(Han)' },
+        { name: 'Linsburg' },
+        { name: 'Nienburg(Weser)' },
+      ],
+    },
+  ],
+});
+
 const longName: DepartureEntry = departure({
   id: 'ice-1006',
   train: { category: 'ICE', number: '1006' },
@@ -182,6 +226,11 @@ export const previewScenarios: readonly PreviewScenario[] = [
       following: [ice, terminating],
       messages: shortFormation.messages,
     }),
+  },
+  {
+    id: 'halteaenderungen',
+    name: 'Umleitung und verkürzter Laufweg',
+    board: ready({ current: diverted, following: [turnsShort, ice] }),
   },
   {
     id: 'gleiswechsel',
