@@ -19,6 +19,7 @@ only covers the mechanics.
 | [0009](0009-shared-blocks-own-mechanism-designs-choose-wording.md) | Shared display blocks own mechanism, designs choose what is printed              | accepted |
 | [0010](0010-draw-dot-matrix-displays-with-a-condensed-web-font.md) | Draw dot-matrix displays with a free condensed web font, not a reproduced matrix | accepted |
 | [0011](0011-quality-messages-carry-a-topic.md)                     | Quality messages are their own kind and carry a topic                            | accepted |
+| [0012](0012-halt-changes-carry-stops-not-text.md)                   | Halt changes are derived from the path comparison and carried as stops, not text | accepted |
 
 Keep this table in sync in the same commit that adds an ADR. Newest entries at the bottom.
 

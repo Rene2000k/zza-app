@@ -134,7 +134,7 @@ const hintFor = (entry: BoardEntry, platform: string | undefined): string | unde
   return undefined;
 };
 
-/** What the rotating panel cycles through: the via stops, then each message. */
+/** What the rotating panel cycles through: the via stops, the route changes, then each message. */
 const panelsFor = (entry: BoardEntry): readonly string[] => {
   const viaStops =
     entry.kind === 'departure' && entry.via.length > 0
@@ -145,5 +145,22 @@ const panelsFor = (entry: BoardEntry): readonly string[] => {
         ]
       : [];
   const texts = displayableMessages(entry.messages).map((message) => message.text ?? '');
-  return [...viaStops, ...texts];
+  return [...viaStops, ...routeTexts(entry), ...texts];
+};
+
+/**
+ * Halt changes in this design's own shouted wording, nothing like the replica's sentences.
+ *
+ * That difference is the point: the model carries a case and a list of stops, never a phrase
+ * (ADR-0012), so two designs can say the same thing in two ways without the provider knowing
+ * either of them.
+ */
+const routeTexts = (entry: BoardEntry): readonly string[] => {
+  if (entry.kind !== 'departure') return [];
+  return entry.routeChanges.map((change) => {
+    const stops = change.stops.map((stop) => stop.name).join(' / ');
+    if (change.kind === 'skippedStops') return `OHNE: ${stops}`;
+    if (change.kind === 'additionalStops') return `EXTRA: ${stops}`;
+    return `NUR BIS ${entry.destination.name}`;
+  });
 };

@@ -4,6 +4,7 @@ import { isDelayed } from '@/domain/boardEntry';
 import type { BoardEntry, DepartureEntry, EntryStatus, EntryTime, PlatformInfo, TerminatingArrivalEntry } from '@/domain/boardEntry';
 import type { Revocation } from './messageCodes';
 import type { BoardMessage, PlainMessageKind, QualityTopic } from '@/domain/message';
+import type { RouteChange } from '@/domain/routeChange';
 import type { RouteStop, StationDetails } from '@/domain/station';
 import type { TrainRef } from '@/domain/train';
 
@@ -64,11 +65,48 @@ export const resolveStatus = (changed: Element | undefined, time: EntryTime): En
   return isDelayed(time) ? 'delayed' : 'onTime';
 };
 
+/** IRIS writes a path as pipe-separated station names; absent and empty both mean none. */
+const splitPath = (raw: string | null | undefined): string[] =>
+  raw === null || raw === undefined || raw === '' ? [] : raw.split('|');
+
 /** The via/destination/origin path for one movement: changed path wins when non-empty. */
 export const resolvePathNames = (planned: Element, changed: Element | undefined): string[] => {
-  const changedRaw = changed?.getAttribute('cpth');
-  const raw = changedRaw !== null && changedRaw !== undefined && changedRaw !== '' ? changedRaw : (planned.getAttribute('ppth') ?? '');
-  return raw === '' ? [] : raw.split('|');
+  const changedNames = splitPath(changed?.getAttribute('cpth'));
+  return changedNames.length > 0 ? changedNames : splitPath(planned.getAttribute('ppth'));
+};
+
+/**
+ * How today's route differs from the timetable, from the two paths of one departure
+ * (ADR-0012). The source marks none of this; the difference between the lists is the signal.
+ *
+ * The stops that vanished are split by *where* they sat: a run at the very end means the
+ * train turns short, anything before that means it passes through without calling. Both can
+ * happen at once, and a diversion shows up as skipped stops beside additional ones rather
+ * than as a kind of its own.
+ */
+export const deriveRouteChanges = (planned: readonly string[], changed: readonly string[]): RouteChange[] => {
+  if (planned.length === 0 || changed.length === 0) return [];
+  const plannedNames = new Set(planned);
+  const changedNames = new Set(changed);
+
+  // Longest run at the end of the planned path that the train no longer reaches.
+  let keptUpTo = planned.length;
+  while (keptUpTo > 0 && !changedNames.has(planned[keptUpTo - 1] ?? '')) keptUpTo -= 1;
+
+  const skipped = planned.slice(0, keptUpTo).filter((name) => !changedNames.has(name));
+  const unreached = planned.slice(keptUpTo);
+
+  // Where the train now turns is not an "additional stop": saying it ends there already says
+  // it calls there. Without this, a route replaced outright — no station in common with the
+  // plan — names the same station twice, once as the new terminus and once as an extra call.
+  const newTerminus = unreached.length > 0 ? changed[changed.length - 1] : undefined;
+  const added = changed.filter((name) => !plannedNames.has(name) && name !== newTerminus);
+
+  const changes: RouteChange[] = [];
+  if (skipped.length > 0) changes.push({ kind: 'skippedStops', stops: skipped.map(routeStop) });
+  if (unreached.length > 0) changes.push({ kind: 'endsEarly', stops: unreached.map(routeStop) });
+  if (added.length > 0) changes.push({ kind: 'additionalStops', stops: added.map(routeStop) });
+  return changes;
 };
 
 const himKind = (cat: string): PlainMessageKind => {
@@ -224,6 +262,14 @@ const mapDeparture = (
   const messages = collectMessages(change?.ownMessages ?? [], change?.dp);
   if (status === 'cancelled') messages.push({ kind: 'cancellation', text: 'Zug fällt aus' });
 
+  // A cancelled stop reports no route change: the cancellation is the statement, and a train
+  // that does not run cannot skip a stop. Keyed on the status rather than on an empty `cpth`,
+  // because a cancelled departure can still carry a path that differs from the plan.
+  const routeChanges =
+    status === 'cancelled'
+      ? []
+      : deriveRouteChanges(splitPath(planDp.getAttribute('ppth')), splitPath(change?.dp?.getAttribute('cpth')));
+
   return {
     kind: 'departure',
     id,
@@ -234,6 +280,7 @@ const mapDeparture = (
     messages,
     destination: routeStop(destinationName),
     via: pathNames.slice(0, -1).map(routeStop),
+    routeChanges,
   };
 };
 
