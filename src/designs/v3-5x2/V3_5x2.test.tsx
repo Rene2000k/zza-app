@@ -244,6 +244,11 @@ describe('V3 5X2 design', () => {
     expect(screen.getByText('Fällt aus')).toBeDefined();
   });
 
+  it('gives a cancelled following train no deviation field', () => {
+    show(ready({ following: [departure({ id: 'x', time: at(20, 7), status: 'cancelled' })] }));
+    expect(screen.queryByText('+7')).toBeNull();
+  });
+
   it('shows two following trains and no more', () => {
     show(
       ready({

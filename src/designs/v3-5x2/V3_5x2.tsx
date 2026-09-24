@@ -13,7 +13,7 @@ import { isSamePlatform } from '@/domain/station';
 import { formatTrainRef } from '@/domain/train';
 import { selectViaStops } from '@/domain/via';
 import styles from './v3-5x2.module.css';
-import type { BoardEntry, EntryTime } from '@/domain/boardEntry';
+import type { BoardEntry } from '@/domain/boardEntry';
 import type { BoardMessage, MessageKind, PlainMessageKind, QualityTopic } from '@/domain/message';
 import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
@@ -112,7 +112,7 @@ const MainTrain = ({ entry }: { readonly entry: BoardEntry }) => (
 const FollowingTrain = ({ entry, row }: { readonly entry: BoardEntry; readonly row: number }) => (
   <div className={row === 0 ? styles.followingFirst : styles.followingSecond}>
     <div className={styles.followingTime}>{formatClockTime(entry.time.planned)}</div>
-    <DeviationField className={styles.followingDeviation} time={entry.time} />
+    <DeviationField className={styles.followingDeviation} entry={entry} />
     <div className={styles.followingTrain}>
       <FittedText>{trainLabel(entry)}</FittedText>
     </div>
@@ -145,9 +145,12 @@ const RunningLine = ({
   </div>
 );
 
-/** A following train states its deviation, "+7", never the expected time. */
-const DeviationField = ({ className, time }: FieldProps & { readonly time: EntryTime }) => {
-  const deviation = formatDelay(time);
+/**
+ * A following train states its deviation, "+7", never the expected time. A cancelled train
+ * has none: its running line says it does not run, and a delay beside that contradicts it.
+ */
+const DeviationField = ({ className, entry }: FieldProps & { readonly entry: BoardEntry }) => {
+  const deviation = entry.status === 'cancelled' ? undefined : formatDelay(entry.time);
   return (
     <div className={className} data-inverted={deviation !== undefined}>
       {deviation}
