@@ -189,10 +189,17 @@ const collectMessages = (ownMessages: readonly Element[], governing: Element | u
   return messages;
 };
 
+/**
+ * IRIS gives Flixtrain its line as a bare number (`l="20"`), which a display would print
+ * alone. Flixtrain is long-distance traffic and is shown like an ICE — "FLX 1801" — so its
+ * line is dropped; no other long-distance category carries one in the data.
+ */
+const hasLineLabel = (category: string): boolean => category !== 'FLX';
+
 const mapTrainRef = (category: string, number: string, line: string | undefined, operator: string | undefined): TrainRef => ({
   category,
   number,
-  ...(line === undefined ? {} : { line }),
+  ...(line === undefined || !hasLineLabel(category) ? {} : { line }),
   ...(operator === undefined ? {} : { operator }),
 });
 

@@ -457,6 +457,20 @@ describe('mapBoardEntries: terminating and originating stops (real Frankfurt fra
     expect(terminating.time.planned).toEqual(new Date('2026-09-10T14:51:00Z'));
   });
 
+  it('names a Flixtrain like an ICE, without its bare line number — FLX 1801, Hamburg Hbf', () => {
+    const planDoc = parseDoc(
+      "<timetable station='Hamburg Hbf'>" +
+        '<s id="-4956399162740083947-2609250850-1">' +
+        '<tl t="p" o="FLX20" c="FLX" n="1801"/>' +
+        '<dp pt="2609250850" pp="14" l="20" fb="FLX 1801" ' +
+        'ppth="Hamburg-Harburg|Bremen Hbf|Osnabrück Hbf|Münster(Westf)Hbf|Gelsenkirchen Hbf|' +
+        'Oberhausen Hbf|Duisburg Hbf|Düsseldorf Hbf|Köln Hbf"/>' +
+        '</s></timetable>',
+    );
+    const [entry] = mapBoardEntries([planDoc], emptyFchg);
+    expect(entry?.train).toEqual({ category: 'FLX', number: '1801', operator: 'FLX20' });
+  });
+
   it('maps a departure-only stop as an originating departure', () => {
     const planDoc = parseDoc(
       "<timetable station='Frankfurt(Main)Hbf'>" +
