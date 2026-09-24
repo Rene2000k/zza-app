@@ -78,6 +78,45 @@ describe('resolvePlatform', () => {
     );
     expect(resolvePlatform(planned, changed)).toEqual({ planned: '1', actual: '3', changed: true });
   });
+
+  it('reduces a section range to its platform — Köln Hbf and Hamburg Hbf, 2026-09-24', () => {
+    const koeln = parseElement('<dp pt="2609241738" pp="4 D-G" l="RB27" fb="RB27"/>');
+    const hamburg = parseElement('<dp pt="2609241715" pp="13A-C" l="RE4" fb="RE4"/>');
+    expect(resolvePlatform(koeln, undefined)).toEqual({
+      planned: '4',
+      actual: '4',
+      changed: false,
+    });
+    expect(resolvePlatform(hamburg, undefined)).toEqual({
+      planned: '13',
+      actual: '13',
+      changed: false,
+    });
+  });
+
+  it('keeps a single-letter platform as a platform of its own', () => {
+    expect(resolvePlatform(parseElement('<dp pt="2609101610" pp="1a"/>'), undefined)).toEqual({
+      planned: '1a',
+      actual: '1a',
+      changed: false,
+    });
+  });
+
+  it('does not count a section assignment as a platform change — ICE 317, Köln Hbf', () => {
+    const planned = parseElement('<dp pt="2609241818" pp="5" fb="ICE 317"/>');
+    const changed = parseElement('<dp cp="5 A-C" pp="5" ct="2609241903" pt="2609241818"/>');
+    expect(resolvePlatform(planned, changed)).toEqual({
+      planned: '5',
+      actual: '5',
+      changed: false,
+    });
+  });
+
+  it('still marks a move to a sectioned platform as a change', () => {
+    const planned = parseElement('<dp pt="2609241738" pp="4 D-G"/>');
+    const changed = parseElement('<dp cp="5 D-G" ct="2609241938" l="RB38"/>');
+    expect(resolvePlatform(planned, changed)).toEqual({ planned: '4', actual: '5', changed: true });
+  });
 });
 
 describe('resolveStatus', () => {
