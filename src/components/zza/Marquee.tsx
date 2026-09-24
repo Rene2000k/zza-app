@@ -12,6 +12,12 @@ export interface MarqueeProps {
    * separator's space, set in the display's font.
    */
   readonly gap?: number | string;
+  /**
+   * Text that ends the content only while it runs — a separator, so the next round reads like
+   * any other join. Content that stands still stays bare. It does not count towards whether
+   * the content fits.
+   */
+  readonly closing?: string;
 }
 
 /**
@@ -25,7 +31,7 @@ export interface MarqueeProps {
  * of being stepped from JavaScript, so a running line costs no frame work and cannot thrash
  * layout.
  */
-export const Marquee = ({ children, speed = 60, gap = 48 }: MarqueeProps) => {
+export const Marquee = ({ children, speed = 60, gap = 48, closing }: MarqueeProps) => {
   const field = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLSpanElement>(null);
   const copy = useRef<HTMLSpanElement>(null);
@@ -59,12 +65,16 @@ export const Marquee = ({ children, speed = 60, gap = 48 }: MarqueeProps) => {
       { duration: (distance / speed) * 1000, iterations: Infinity, easing: 'linear' },
     );
     return () => animation.cancel();
-  }, [scrolling, children, gap, speed]);
+  }, [scrolling, children, gap, closing, speed]);
 
   return (
     <div className={styles.marquee} ref={field} data-scrolling={scrolling}>
       <div className={styles.marqueeTrack} ref={track}>
         <span ref={content}>{children}</span>
+        {/* Its own box, so its leading space would collapse without `pre`. */}
+        {scrolling && closing !== undefined ? (
+          <span style={{ whiteSpace: 'pre' }}>{closing}</span>
+        ) : null}
         {scrolling ? (
           <span
             aria-hidden="true"
@@ -74,6 +84,7 @@ export const Marquee = ({ children, speed = 60, gap = 48 }: MarqueeProps) => {
             {/* Kept as written: a space alone at the start of a line would otherwise collapse. */}
             {typeof gap === 'string' ? <span style={{ whiteSpace: 'pre' }}>{gap}</span> : null}
             {children}
+            {closing}
           </span>
         ) : null}
       </div>

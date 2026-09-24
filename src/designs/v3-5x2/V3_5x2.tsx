@@ -128,8 +128,8 @@ interface FieldProps {
 }
 
 /**
- * A field without text stays blue: the real display shows no empty white bar. Several notices
- * also end on the separator, so the line reads the same when it starts over.
+ * A field without text stays blue: the real display shows no empty white bar. A running line
+ * also ends on the separator, so it reads the same when it starts over.
  */
 const RunningLine = ({
   className,
