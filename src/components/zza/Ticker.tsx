@@ -33,11 +33,15 @@ export const Ticker = ({
 }: TickerProps) => {
   const texts = displayableMessages(messages).map((message) => message.text);
   if (texts.length === 0) return null;
-  const closing = closeWithSeparator && texts.length > 1 ? separator.trimEnd() : '';
+  const closes = closeWithSeparator && texts.length > 1;
+  const closing = separator.trimEnd();
+  // A closed line runs straight into its next round with the separator's own trailing space,
+  // not with the marquee's default gap, so "zwei +++ eins" reads like any other join.
+  const gap = closes ? { gap: separator.slice(closing.length) } : {};
   return (
     <div role="marquee">
-      <Marquee {...(speed === undefined ? {} : { speed })}>
-        {texts.join(separator) + closing}
+      <Marquee {...(speed === undefined ? {} : { speed })} {...gap}>
+        {texts.join(separator) + (closes ? closing : '')}
       </Marquee>
     </div>
   );

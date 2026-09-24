@@ -39,4 +39,14 @@ describe('Marquee', () => {
     // The repetition is decoration; a screen reader should hear the text once.
     expect(copies[1]?.getAttribute('aria-hidden')).toBe('true');
   });
+
+  it('puts a gap given as text in front of the copy, kept as written', () => {
+    stubWidths({ content: 900, field: 400 });
+    const { container } = render(<Marquee gap=" ">eins +++ zwei +++</Marquee>);
+
+    const copy = container.querySelector('[aria-hidden="true"]');
+    expect(copy?.textContent).toBe(' eins +++ zwei +++');
+    expect(copy?.getAttribute('style')).toBeNull();
+    expect(copy?.querySelector('span')?.style.whiteSpace).toBe('pre');
+  });
 });
