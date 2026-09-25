@@ -242,7 +242,7 @@ describe('V3 5X2 design', () => {
     );
     expect(
       screen.getByText(
-        'Heute ohne Halt in Duisburg Hbf +++ Heute mit zusätzlichem Halt in Solingen Hbf +++',
+        'Heute ohne Halt in Duisburg Hbf +++ Heute mit zusätzlichem Halt in Solingen Hbf',
       ),
     ).toBeDefined();
   });
