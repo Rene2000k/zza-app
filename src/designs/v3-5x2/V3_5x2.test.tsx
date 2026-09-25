@@ -242,9 +242,42 @@ describe('V3 5X2 design', () => {
     );
     expect(
       screen.getByText(
-        'Heute ohne Halt in Duisburg Hbf +++ Heute mit zusätzlichem Halt in Solingen Hbf +++',
+        'Heute ohne Halt in Duisburg Hbf +++ Heute mit zusätzlichem Halt in Solingen Hbf',
       ),
     ).toBeDefined();
+  });
+
+  it('marks a diversion of the main train with H+ and H−, in that order', () => {
+    show(
+      ready({
+        current: departure({
+          id: 'x',
+          routeChanges: [
+            { kind: 'skippedStops', stops: [{ name: 'Duisburg Hbf' }] },
+            { kind: 'additionalStops', stops: [{ name: 'Solingen Hbf' }] },
+          ],
+        }),
+      }),
+    );
+    expect(screen.getAllByRole('img').map((img) => img.getAttribute('aria-label'))).toEqual([
+      'Zusätzlicher Halt',
+      'Halt entfällt',
+    ]);
+  });
+
+  it('shows no halt box for a following train, which has no room for one', () => {
+    show(
+      ready({
+        current: departure({ id: 'main' }),
+        following: [
+          departure({
+            id: 'next',
+            routeChanges: [{ kind: 'additionalStops', stops: [{ name: 'Hamburg-Harburg' }] }],
+          }),
+        ],
+      }),
+    );
+    expect(screen.queryAllByRole('img')).toHaveLength(0);
   });
 
   it('runs a route change behind a following train too', () => {
@@ -254,9 +287,7 @@ describe('V3 5X2 design', () => {
         following: [
           departure({
             id: 'next',
-            routeChanges: [
-              { kind: 'skippedStops', stops: [{ name: 'Offenbach(Main)Hbf' }] },
-            ],
+            routeChanges: [{ kind: 'skippedStops', stops: [{ name: 'Offenbach(Main)Hbf' }] }],
           }),
         ],
       }),

@@ -29,7 +29,7 @@ Upper module row, in dots from the top:
 | Module | y     | Field                                                    |
 | ------ | ----- | -------------------------------------------------------- |
 | 1      | 0–23  | departure time                                           |
-| 1      | 24–39 | train                                                    |
+| 1      | 24–39 | train; halt boxes H+ / H− right-aligned, see below       |
 | 1      | 40–63 | platform sections and coach strip, only with a formation |
 | 2–4    | 0–15  | running line for the main train                          |
 | 2–4    | 16–31 | via stops                                                |
@@ -87,6 +87,11 @@ the stylesheet converts it to `font-size` through the family's cap ratio (ADR-00
   it starts over. A single notice stands alone.
 - **A train ending here** shows "Bitte nicht einsteigen" in the via line and "Fahrt endet hier" in
   its running line; behind a following train it reads "Zug endet hier".
+- **Halt boxes** (ADR-0013). No photograph shows H+ or H− on this generation. They stand where
+  V4 puts them — right of the main train's name, 16 dots tall like the train band, 2 dots apart
+  and 2 dots in from the module edge; a long name is squeezed rather than covered. The time band
+  is too narrow for two of them beside "10:57". The following rows have no free field and carry
+  the change in their running line only. The running lines word the change either way.
 - **Running speed** — about 40 dots per second, an estimate. Still images cannot show it.
 - **Notices about the data** (stale, no answer) take the main running line when no train text runs
   there. The original shows nothing of the kind; the replica would otherwise hide a data outage.
@@ -96,4 +101,5 @@ the stylesheet converts it to `font-size` through the family's cap ratio (ADR-00
 
 - The dots themselves (ADR-0010). Seams and gap are drawn; the matrix is not.
 - Blinking — the original does not blink.
-- Pictograms such as the S-Bahn logo or coach symbols, which wait for a later step.
+- Pictograms other than the halt boxes, such as the S-Bahn logo or coach symbols, which wait for
+  a later step.
