@@ -2,10 +2,12 @@ import '@fontsource/roboto-condensed/latin-400.css';
 import '@fontsource/roboto-condensed/latin-ext-400.css';
 import {
   FittedText,
+  Pictogram,
   Ticker,
   TrainFormationDisplay,
   formatClockTime,
   formatDelay,
+  haltChangePictograms,
 } from '@/components/zza';
 import { delayMinutes, headlineStation } from '@/domain/boardEntry';
 import { displayableMessages } from '@/domain/message';
@@ -94,6 +96,7 @@ const MainTrain = ({ entry }: { readonly entry: BoardEntry }) => (
     <div className={styles.time}>{formatClockTime(entry.time.planned)}</div>
     <div className={styles.train}>
       <FittedText>{trainLabel(entry)}</FittedText>
+      <HaltPictograms entry={entry} />
     </div>
     {/* The real display leaves the area empty without a coach sequence, strip included. */}
     {entry.formation === undefined ? null : (
@@ -123,6 +126,24 @@ const FollowingTrain = ({ entry, row }: { readonly entry: BoardEntry; readonly r
     <RunningLine className={styles.followingHint} messages={followingHints(entry)} />
   </div>
 );
+
+/**
+ * H+ and H− beside the main train's name (ADR-0013). No photograph shows them on this
+ * generation, so they take the place V4 gives them: right of the train, as tall as its band,
+ * which squeezes a long train name rather than covering it. The following rows have no room
+ * and carry the change in their running line only.
+ */
+const HaltPictograms = ({ entry }: { readonly entry: BoardEntry }) => {
+  const pictograms = haltChangePictograms(entry);
+  if (pictograms.length === 0) return null;
+  return (
+    <div className={styles.pictograms}>
+      {pictograms.map((id) => (
+        <Pictogram key={id} id={id} />
+      ))}
+    </div>
+  );
+};
 
 interface FieldProps {
   readonly className: string | undefined;
@@ -261,8 +282,7 @@ const routeText = (change: RouteChange, destinationName: string): string => {
     : `Heute mit zusätzlichem Halt in ${stops}`;
 };
 
-const stopNames = (change: RouteChange): string =>
-  change.stops.map((stop) => stop.name).join(', ');
+const stopNames = (change: RouteChange): string => change.stops.map((stop) => stop.name).join(', ');
 
 const shown = (messages: readonly BoardMessage[]): BoardMessage[] =>
   messages.filter((message) =>

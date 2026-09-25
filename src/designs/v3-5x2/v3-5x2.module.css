@@ -85,6 +85,21 @@
   padding-left: 10.5px;
 }
 
+/*
+ * Halt boxes at the right end of the train band, as tall as the band — 16 dots, like every
+ * inverted field — 2 dots apart and 2 dots in from the module edge. They keep their width;
+ * the train name beside them is what gives way.
+ */
+.train > .pictograms {
+  flex: none;
+  display: flex;
+  gap: 5.25px;
+  margin-left: 5.25px;
+  margin-right: 5.25px;
+  font-size: 48px;
+  line-height: 1;
+}
+
 .formation {
   composes: cap7;
   position: absolute;

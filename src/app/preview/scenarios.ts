@@ -233,6 +233,11 @@ export const previewScenarios: readonly PreviewScenario[] = [
     board: ready({ current: diverted, following: [turnsShort, ice] }),
   },
   {
+    id: 'verkuerzter-laufweg',
+    name: 'Verkürzter Laufweg vorne',
+    board: ready({ current: turnsShort, following: [diverted, ice] }),
+  },
+  {
     id: 'gleiswechsel',
     name: 'Gleiswechsel weg von Gleis 9',
     board: ready({
