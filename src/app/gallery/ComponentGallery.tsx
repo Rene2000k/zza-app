@@ -1,6 +1,7 @@
 import {
   FittedText,
   Marquee,
+  Pictogram,
   Ticker,
   TrainFormationDisplay,
   formatClockTime,
@@ -144,6 +145,24 @@ const blocks: readonly BlockSection[] = [
         ),
         width: '20em',
       },
+    ],
+  },
+  {
+    name: 'Pictogram',
+    summary:
+      'Piktogramme der echten Anzeiger als Vektorzeichnung, gewählt über eine ID. Eine em hoch, in der Farbe der Umgebung; welche eine Halteänderung bekommt, sagt haltChangePictograms.',
+    samples: [
+      { label: 'haltPlus', content: <Pictogram id="haltPlus" /> },
+      { label: 'haltMinus', content: <Pictogram id="haltMinus" /> },
+      {
+        label: 'Umleitung: beide, H+ zuerst',
+        content: (
+          <>
+            <Pictogram id="haltPlus" /> <Pictogram id="haltMinus" />
+          </>
+        ),
+      },
+      { label: 'invertiert', content: <Pictogram id="haltPlus" />, invert: true },
     ],
   },
   {
