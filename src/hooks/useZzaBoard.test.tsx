@@ -58,6 +58,24 @@ describe('useZzaBoard', () => {
     ]);
   });
 
+  it('sets the second part of a coupled main train beside it, not among the following trains', async () => {
+    const { result } = renderBoard({ platform: '15' });
+    await waitFor(() => expect(result.current.state).toBe('ready'));
+
+    const board = result.current;
+    if (board.state !== 'ready') throw new Error('expected a ready board');
+    expect(board.current?.id).toBe('mock-hlb-15012');
+    expect(board.secondPart?.id).toBe('mock-hlb-15112');
+    // ICE 847 goes the same way as ICE 857 and is not listed at all (ADR-0014).
+    expect(board.following.map((entry) => entry.id)).toEqual(['mock-ice-857']);
+  });
+
+  it('has no second part for a train that runs alone', async () => {
+    const { result } = renderBoard({ platform: '9' });
+    await waitFor(() => expect(result.current.state).toBe('ready'));
+    expect(result.current.state === 'ready' && result.current.secondPart).toBeUndefined();
+  });
+
   it('reports the data as stale once it is older than three poll intervals', async () => {
     const clock = manualClock(new Date('2026-09-09T08:00:00+02:00'));
     const { result } = renderBoard({}, clock);

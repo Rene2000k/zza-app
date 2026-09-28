@@ -10,6 +10,7 @@ import {
   haltChangePictograms,
 } from '@/components/zza';
 import { delayMinutes, headlineStation } from '@/domain/boardEntry';
+import { splitStop } from '@/domain/coupling';
 import { displayableMessages } from '@/domain/message';
 import { isSamePlatform } from '@/domain/station';
 import { formatTrainRef } from '@/domain/train';
@@ -32,10 +33,14 @@ export interface V3_5x2Props {
  * only emphasis is inversion, and whatever a notice has to say runs as text in one of three
  * running lines — above the main train, and behind each of the two following trains. That
  * includes the main train's delay, which it words there instead of printing a "+7" field.
+ *
+ * A coupled main train that is split ahead takes the whole display: its second part fills the
+ * lower module row in the upper row's layout, in place of the following trains (ADR-0014).
  */
 export const V3_5x2 = ({ board }: V3_5x2Props) => {
   const ready = board.state === 'ready' ? board : undefined;
   const current = ready?.current;
+  const secondPart = ready?.secondPart;
   const platform = ready?.platform ?? current?.platform.actual ?? current?.platform.planned;
 
   return (
@@ -44,10 +49,22 @@ export const V3_5x2 = ({ board }: V3_5x2Props) => {
       <RunningLine className={styles.mainHint} messages={mainHints(board)} />
       <div className={styles.platform}>{platform}</div>
 
-      <div className={styles.followingLabel}>Folgezüge:</div>
-      {ready?.following.slice(0, FOLLOWING_ROWS).map((entry, row) => (
-        <FollowingTrain key={entry.id} entry={entry} row={row} />
-      ))}
+      {current === undefined || secondPart === undefined ? (
+        <>
+          <div className={styles.followingLabel}>Folgezüge:</div>
+          {ready?.following.slice(0, FOLLOWING_ROWS).map((entry, row) => (
+            <FollowingTrain key={entry.id} entry={entry} row={row} />
+          ))}
+        </>
+      ) : (
+        <div className={styles.secondPart}>
+          <MainTrain entry={secondPart} />
+          <RunningLine
+            className={styles.mainHint}
+            messages={trainHints(secondPart, secondPart.messages, ready?.platform, current)}
+          />
+        </div>
+      )}
 
       <div className={styles.seams} aria-hidden="true" />
     </div>
@@ -205,18 +222,43 @@ const mainHints = (board: ZzaBoardViewModel): readonly BoardMessage[] => {
   if (board.state === 'unavailable') return [notice('Derzeit keine Zugdaten')];
 
   const { current } = board;
-  const trainHints =
+  const hints =
     current === undefined
       ? []
-      : unique([
-          ...statusNotices(current, board.messages, 'Zug fällt aus'),
-          ...(current.kind === 'terminatingArrival' ? [notice('Fahrt endet hier')] : []),
-          ...delayNotice(current),
-          ...routeNotices(current),
-          ...shown(board.messages),
-          ...platformChange(current, board.platform),
-        ]);
-  return trainHints.length === 0 && board.stale ? [notice('Daten nicht aktuell')] : trainHints;
+      : trainHints(current, board.messages, board.platform, board.secondPart);
+  return hints.length === 0 && board.stale ? [notice('Daten nicht aktuell')] : hints;
+};
+
+/**
+ * What runs above a train in the upper layout: the main train's, or that of the second part
+ * of a coupled one, which says the same about itself.
+ */
+const trainHints = (
+  entry: BoardEntry,
+  messages: readonly BoardMessage[],
+  platform: string | undefined,
+  partner: BoardEntry | undefined,
+): readonly BoardMessage[] =>
+  unique([
+    ...statusNotices(entry, messages, 'Zug fällt aus'),
+    ...(entry.kind === 'terminatingArrival' ? [notice('Fahrt endet hier')] : []),
+    ...splitNotice(entry, partner),
+    ...delayNotice(entry),
+    ...routeNotices(entry),
+    ...shown(messages),
+    ...platformChange(entry, platform),
+  ]);
+
+/**
+ * "Zug wird in Gießen geteilt", above both parts, as the real displays word it. Nothing is
+ * said where the parts share no stop ahead to name, or where one of them does not run.
+ */
+const splitNotice = (entry: BoardEntry, partner: BoardEntry | undefined): BoardMessage[] => {
+  if (partner === undefined || entry.status === 'cancelled' || partner.status === 'cancelled') {
+    return [];
+  }
+  const stop = splitStop(entry, partner);
+  return stop === undefined ? [] : [notice(`Zug wird in ${stop.name} geteilt`)];
 };
 
 const followingHints = (entry: BoardEntry): readonly BoardMessage[] =>

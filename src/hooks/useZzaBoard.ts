@@ -1,5 +1,6 @@
 import { dataAgeSeconds, isStale, relevantEntries } from '@/domain/board';
 import { sortByTime } from '@/domain/boardEntry';
+import { collapseCoupledParts, coupledPartners } from '@/domain/coupling';
 import { displayableMessages } from '@/domain/message';
 import { useBoard } from './useBoard';
 import { useNow } from './useClock';
@@ -33,6 +34,12 @@ export interface ReadyBoard {
   readonly platform: string | undefined;
   /** The main train, or undefined when nothing is due and the display rests. */
   readonly current: BoardEntry | undefined;
+  /**
+   * The part the main train runs coupled with and that goes somewhere else — two train numbers
+   * leaving as one, to be split ahead (ADR-0014). Undefined for a train that runs alone. It is
+   * not repeated among the following trains; a part that goes the same way is not shown at all.
+   */
+  readonly secondPart: BoardEntry | undefined;
   /** Trains after the current one, in time order. A design shows as many as it has rows for. */
   readonly following: readonly BoardEntry[];
   /** Messages of the current train that have a text — material for a running line. */
@@ -50,7 +57,7 @@ const UNAVAILABLE: UnavailableBoard = { state: 'unavailable' };
  * Turns the polled board into the state a design renders.
  *
  * The slots are assigned by time alone: the next relevant entry is the main train, the rest
- * follow. A train that changed away from this platform therefore keeps its place in the
+ * follow — except for a coupled main train, whose second part stands beside it. A train that changed away from this platform therefore keeps its place in the
  * order instead of being pushed into the following rows — the real displays do move it, but
  * that rule needs its own work and is deliberately not guessed at here.
  */
@@ -61,17 +68,19 @@ export const useZzaBoard = (config: DisplayConfig): ZzaBoardViewModel => {
   if (isLoading) return LOADING;
   if (board === undefined) return UNAVAILABLE;
 
-  const entries = sortByTime(
-    relevantEntries(board.entries, now, { horizonMinutes: config.horizonMinutes }),
+  const entries = collapseCoupledParts(
+    sortByTime(relevantEntries(board.entries, now, { horizonMinutes: config.horizonMinutes })),
   );
-  const [current, ...following] = entries;
+  const [current, ...rest] = entries;
+  const secondPart = current === undefined ? undefined : coupledPartners(current, rest)[0];
 
   return {
     state: 'ready',
     station: board.station,
     platform: board.platform,
     current,
-    following,
+    secondPart,
+    following: rest.filter((entry) => entry !== secondPart),
     messages: tickerMessages(current),
     dataAgeSeconds: dataAgeSeconds(board, now),
     stale: isStale(board, now, staleAfterSeconds),

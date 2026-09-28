@@ -39,6 +39,7 @@ const ready = (overrides: Partial<ReadyBoard>): ReadyBoard => ({
   station: { evaNumber: '8000105', name: 'Frankfurt(Main)Hbf' },
   platform: '9',
   current: undefined,
+  secondPart: undefined,
   following: [],
   messages: [],
   dataAgeSeconds: 4,
@@ -168,6 +169,61 @@ describe('V3 5X2 design', () => {
       }),
     );
     expect(screen.getByText(/Fahrradmitnahme nicht möglich/)).toBeDefined();
+  });
+
+  describe('coupled trains (ADR-0014)', () => {
+    const route = (...names: string[]) => names.map((name) => ({ name }));
+    const toKassel = departure({
+      id: 'hlb-15012',
+      train: { category: 'HLB', number: '15012', line: 'RE99' },
+      destination: { name: 'Kassel Hbf' },
+      via: route('Friedberg(Hess)', 'Gießen', 'Marburg(Lahn)'),
+      coupledWith: ['hlb-15112'],
+    });
+    const toSiegen = departure({
+      id: 'hlb-15112',
+      train: { category: 'HLB', number: '15112' },
+      destination: { name: 'Siegen Hbf' },
+      via: route('Friedberg(Hess)', 'Gießen', 'Wetzlar'),
+      coupledWith: ['hlb-15012'],
+    });
+    const later = departure({ id: 'later', destination: { name: 'Stuttgart Hbf' } });
+
+    it('shows the second part in the lower row, in place of the following trains', () => {
+      show(ready({ current: toKassel, secondPart: toSiegen, following: [later] }));
+      expect(screen.getByText('Kassel Hbf')).toBeDefined();
+      expect(screen.getByText('Siegen Hbf')).toBeDefined();
+      expect(screen.getByText('RE99')).toBeDefined();
+      expect(screen.getByText('HLB 15112')).toBeDefined();
+      expect(screen.getAllByText('10:04')).toHaveLength(2);
+      expect(screen.getByText('Friedberg(Hess) - Gießen - Wetzlar')).toBeDefined();
+      expect(screen.queryByText('Folgezüge:')).toBeNull();
+      expect(screen.queryByText('Stuttgart Hbf')).toBeNull();
+    });
+
+    it('names the split stop in the running lines of both parts', () => {
+      show(ready({ current: toKassel, secondPart: toSiegen }));
+      expect(screen.getAllByText('Zug wird in Gießen geteilt')).toHaveLength(2);
+    });
+
+    it('runs what concerns one part in that part’s line only', () => {
+      const late = departure({ ...toSiegen, time: at(4, 10), status: 'delayed' });
+      show(ready({ current: toKassel, secondPart: late }));
+      expect(screen.getByText('Zug wird in Gießen geteilt')).toBeDefined();
+      expect(
+        screen.getByText('Zug wird in Gießen geteilt +++ Verspätung ca. 10 Min.'),
+      ).toBeDefined();
+    });
+
+    it('announces no split when one part does not run', () => {
+      const container = show(
+        ready({ current: toKassel, secondPart: departure({ ...toSiegen, status: 'cancelled' }) }),
+      );
+      expect(screen.queryByText(/geteilt/)).toBeNull();
+      expect(screen.getByText('Zug fällt aus')).toBeDefined();
+      expect(screen.getByText('Siegen Hbf')).toBeDefined();
+      expect(invertedFields(container)).toHaveLength(1);
+    });
   });
 
   it('runs a quality notice after the delay, separated by +++', () => {

@@ -579,6 +579,85 @@ describe('mapBoardEntries: route changes', () => {
   });
 });
 
+describe('mapBoardEntries: coupled trains (ADR-0014)', () => {
+  const emptyFchg = parseDoc('<timetable station="Frankfurt(Main)Hbf" eva="8000105"></timetable>');
+
+  // HLB 15012 to Kassel and HLB 15112 to Siegen, Frankfurt(Main)Hbf, 2026-09-25. Only the
+  // first names the second, by trip — the partner carries no `wings` of its own.
+  const hlbToKassel =
+    '<s id="1187525704288649123-2609251220-1"><tl f="D" t="p" o="K4RE" c="HLB" n="15012"/>' +
+    '<dp pt="2609251220" pp="15" l="RE99" fb="RE99" wings="2734186264874777486-2609251220" ' +
+    'ppth="Friedberg(Hess)|Gießen|Marburg(Lahn)|Cölbe|Kirchhain(Bz Kassel)|Stadtallendorf|' +
+    'Neustadt(Kr Marburg)|Schwalmstadt-Wiera|Treysa|Schlierbach(Schwalm-Eder-Kr.)|Zimmersrode|' +
+    'Borken(Hess)|Singlis|Wabern(Bz Kassel)|Felsberg-Gensungen|Felsberg-Altenbrunslar|' +
+    'Felsberg-Wolfershausen|Edermünde-Grifte|Baunatal-Guntershausen|Kassel-Wilhelmshöhe|Kassel Hbf"/></s>';
+  const hlbToSiegen =
+    '<s id="2734186264874777486-2609251220-1"><tl f="D" t="p" o="K4RE" c="HLB" n="15112"/>' +
+    '<dp pt="2609251220" pp="15" l="RE99" fb="RE99" ' +
+    'ppth="Friedberg(Hess)|Gießen|Wetzlar|Herborn(Dillkr)|Dillenburg|Haiger|Siegen Hbf"/></s>';
+
+  const plan = (...stops: string[]) =>
+    parseDoc("<timetable station='Frankfurt(Main)Hbf'>" + stops.join('') + '</timetable>');
+
+  it('links both parts to each other, although the source names the partner on one side only', () => {
+    const [kassel, siegen] = mapBoardEntries([plan(hlbToKassel, hlbToSiegen)], emptyFchg);
+    expect(kassel?.coupledWith).toEqual(['2734186264874777486-2609251220-1']);
+    expect(siegen?.coupledWith).toEqual(['1187525704288649123-2609251220-1']);
+  });
+
+  it('links parts that sit in different plan hours', () => {
+    const [kassel, siegen] = mapBoardEntries([plan(hlbToKassel), plan(hlbToSiegen)], emptyFchg);
+    expect(kassel?.coupledWith).toHaveLength(1);
+    expect(siegen?.coupledWith).toHaveLength(1);
+  });
+
+  it('leaves a train unlinked when its partner is not on the board', () => {
+    const [kassel] = mapBoardEntries([plan(hlbToKassel)], emptyFchg);
+    expect(kassel?.coupledWith).toBeUndefined();
+  });
+
+  it('takes the coupling from the departure, not from the arrival — ICE 857, Hannover Hbf', () => {
+    // The real stop carries `wings` on both movements. Without it on the departure, the same
+    // stop stands for a train that arrives coupled and is split here — not coupled on this board.
+    const ice857 = (dpWings: string) =>
+      '<s id="7127812590731908748-2609250938-6"><tl f="F" t="p" o="80" c="ICE" n="857"/>' +
+      '<ar pt="2609251228" pp="9" fb="ICE 857" wings="-8906112445839706377-2609250926" ' +
+      'ppth="Köln Hbf|Wuppertal Hbf|Hagen Hbf|Hamm(Westf)Hbf|Bielefeld Hbf"/>' +
+      `<dp pt="2609251231" pp="9" fb="ICE 857"${dpWings} ` +
+      'ppth="Wolfsburg Hbf|Berlin-Spandau|Berlin Hbf|Berlin Südkreuz"/></s>';
+    const ice847 =
+      '<s id="-8906112445839706377-2609250926-9"><tl f="F" t="p" o="80" c="ICE" n="847"/>' +
+      '<ar pt="2609251228" pp="9" fb="ICE 847" ppth="Köln Hbf|Düsseldorf Hbf|Düsseldorf Flughafen|' +
+      'Duisburg Hbf|Gelsenkirchen Hbf|Dortmund Hbf|Hamm(Westf)Hbf|Bielefeld Hbf"/>' +
+      '<dp pt="2609251231" pp="9" fb="ICE 847" ppth="Wolfsburg Hbf|Berlin-Spandau|Berlin Hbf|Berlin Südkreuz"/></s>';
+
+    const [together] = mapBoardEntries(
+      [plan(ice857(' wings="-8906112445839706377-2609250926"'), ice847)],
+      emptyFchg,
+    );
+    expect(together?.coupledWith).toEqual(['-8906112445839706377-2609250926-9']);
+
+    const [splitHere] = mapBoardEntries([plan(ice857(''), ice847)], emptyFchg);
+    expect(splitHere?.coupledWith).toBeUndefined();
+  });
+
+  it('takes the coupling of a train ending here from its arrival', () => {
+    // RE 11169 from Flensburg and RE 11269 from Kiel end at Hamburg Hbf coupled, 2026-09-25.
+    const hamburg = plan(
+      '<s id="-2125895193974483860-2609251205-8"><tl f="N" t="p" o="800201" c="RE" n="11269"/>' +
+        '<ar pt="2609251322" pp="7G-I" l="RE7" fb="RE7" ' +
+        'ppth="Kiel Hbf|Flintbek|Bordesholm|Einfeld|Neumünster|Elmshorn|Hamburg Dammtor"/></s>',
+      '<s id="-2053455840597925551-2609251117-11"><tl f="N" t="p" o="800201" c="RE" n="11169"/>' +
+        '<ar pt="2609251322" pp="7G-I" l="RE7" fb="RE7" wings="-2125895193974483860-2609251205" ' +
+        'ppth="Flensburg|Tarp|Jübek|Schleswig|Owschlag|Rendsburg|Nortorf|Neumünster|Elmshorn|Hamburg Dammtor"/></s>',
+    );
+    const [kiel, flensburg] = mapBoardEntries([hamburg], emptyFchg);
+    expect(flensburg?.kind).toBe('terminatingArrival');
+    expect(flensburg?.coupledWith).toEqual(['-2125895193974483860-2609251205-8']);
+    expect(kiel?.coupledWith).toEqual(['-2053455840597925551-2609251117-11']);
+  });
+});
+
 describe('mapBoardEntries: terminating and originating stops (real Frankfurt fragments)', () => {
   const emptyFchg = parseDoc('<timetable station="Frankfurt(Main)Hbf" eva="8000105"></timetable>');
 

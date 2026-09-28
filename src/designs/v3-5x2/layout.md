@@ -50,6 +50,12 @@ Lower module row:
 There is no footer line: on the real display the bottom band belongs to the second following
 train. Inverted fields are 16 dots tall and sit vertically centred in the 24-dot rows.
 
+**A coupled train that is split ahead** (ADR-0014) takes the lower module row for its second part
+instead: modules 1–4 repeat the upper row's bands — time, train, platform sections, running line,
+via, destination — 75 dots further down; module 5 stays empty, the platform belongs to the upper
+row. The label and the following trains are not shown meanwhile. That is how the photographs of V3
+"Zugteilung" show it.
+
 ## Colour
 
 | Token        | Value     | Use                                   |
@@ -92,6 +98,10 @@ the stylesheet converts it to `font-size` through the family's cap ratio (ADR-00
   and 2 dots in from the module edge; a long name is squeezed rather than covered. The time band
   is too narrow for two of them beside "10:57". The following rows have no free field and carry
   the change in their running line only. The running lines word the change either way.
+- **Coupled trains.** Both parts run "Zug wird in Gießen geteilt", the wording of one photograph;
+  another reads "Zugteilung in Basdorf". Nothing is said when one part is cancelled. A boarding
+  section per part ("Zustieg Abschnitt D-F") would need a coach sequence the source does not give.
+  Which part stands on top is the source's order, not the front of the train.
 - **Running speed** — about 40 dots per second, an estimate. Still images cannot show it.
 - **Notices about the data** (stale, no answer) take the main running line when no train text runs
   there. The original shows nothing of the kind; the replica would otherwise hide a data outage.
