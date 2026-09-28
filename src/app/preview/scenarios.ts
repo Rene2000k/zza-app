@@ -43,6 +43,7 @@ const ready = (overrides: Partial<ReadyBoard>): ReadyBoard => ({
   station,
   platform: '9',
   current: undefined,
+  secondPart: undefined,
   following: [],
   messages: [],
   dataAgeSeconds: 4,
@@ -177,6 +178,28 @@ const turnsShort: DepartureEntry = departure({
   ],
 });
 
+/**
+ * Two train numbers leaving as one and parting in Gießen (ADR-0014), after HLB 15012 and
+ * 15112 from Frankfurt(Main)Hbf.
+ */
+const toKassel: DepartureEntry = departure({
+  id: 'hlb-15012',
+  train: { category: 'HLB', number: '15012', line: 'RE99' },
+  time: at(6),
+  destination: { name: 'Kassel Hbf' },
+  via: [{ name: 'Friedberg(Hess)' }, { name: 'Gießen' }, { name: 'Marburg(Lahn)' }],
+  coupledWith: ['hlb-15112'],
+});
+
+const toSiegen: DepartureEntry = departure({
+  id: 'hlb-15112',
+  train: { category: 'HLB', number: '15112', line: 'RE99' },
+  time: at(6),
+  destination: { name: 'Siegen Hbf' },
+  via: [{ name: 'Friedberg(Hess)' }, { name: 'Gießen' }, { name: 'Wetzlar' }],
+  coupledWith: ['hlb-15012'],
+});
+
 const longName: DepartureEntry = departure({
   id: 'ice-1006',
   train: { category: 'ICE', number: '1006' },
@@ -250,6 +273,11 @@ export const previewScenarios: readonly PreviewScenario[] = [
     id: 'endender-zug',
     name: 'Endender Zug',
     board: ready({ current: terminating, following: [ice] }),
+  },
+  {
+    id: 'zugteilung',
+    name: 'Zugteilung',
+    board: ready({ current: toKassel, secondPart: toSiegen, following: [ice] }),
   },
   {
     id: 'langer-name',

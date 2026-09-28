@@ -23,6 +23,12 @@ interface BoardEntryBase {
   readonly messages: readonly BoardMessage[];
   /** Coach sequence, when a source provides one. */
   readonly formation?: TrainFormation;
+  /**
+   * Ids of the entries this train runs coupled with from here — the other parts of one set of
+   * coaches under several train numbers (ADR-0014). Each part stays an entry of its own with
+   * its own delay and messages; the link always points both ways. Absent for a single train.
+   */
+  readonly coupledWith?: readonly string[];
 }
 
 export interface DepartureEntry extends BoardEntryBase {

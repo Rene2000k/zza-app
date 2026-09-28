@@ -146,6 +146,62 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
       routeChanges: [],
     },
     {
+      // Coupled trains that are split ahead (ADR-0014), after HLB 15012/15112 on 2026-09-25:
+      // two numbers leave as one and part in Gießen. The display shows both parts.
+      kind: 'departure',
+      id: 'mock-hlb-15012',
+      train: { category: 'HLB', number: '15012', line: 'RE99', operator: 'K4RE' },
+      platform: { planned: '15', actual: '15', changed: false },
+      time: at(6),
+      status: 'onTime',
+      messages: [],
+      destination: { evaNumber: '8000193', name: 'Kassel Hbf' },
+      via: [{ name: 'Friedberg(Hess)' }, { name: 'Gießen' }, { name: 'Marburg(Lahn)' }],
+      routeChanges: [],
+      coupledWith: ['mock-hlb-15112'],
+    },
+    {
+      kind: 'departure',
+      id: 'mock-hlb-15112',
+      train: { category: 'HLB', number: '15112', line: 'RE99', operator: 'K4RE' },
+      platform: { planned: '15', actual: '15', changed: false },
+      time: at(6),
+      status: 'onTime',
+      messages: [],
+      destination: { evaNumber: '8000046', name: 'Siegen Hbf' },
+      via: [{ name: 'Friedberg(Hess)' }, { name: 'Gießen' }, { name: 'Wetzlar' }],
+      routeChanges: [],
+      coupledWith: ['mock-hlb-15012'],
+    },
+    {
+      // Coupled trains that stay together to the end: one train as far as this platform is
+      // concerned, so ICE 847 is not listed beside ICE 857.
+      kind: 'departure',
+      id: 'mock-ice-857',
+      train: { category: 'ICE', number: '857', operator: '80' },
+      platform: { planned: '15', actual: '15', changed: false },
+      time: at(24),
+      status: 'onTime',
+      messages: [],
+      destination: { evaNumber: '8011160', name: 'Berlin Südkreuz' },
+      via: [{ name: 'Wolfsburg Hbf' }, { name: 'Berlin Hbf' }],
+      routeChanges: [],
+      coupledWith: ['mock-ice-847'],
+    },
+    {
+      kind: 'departure',
+      id: 'mock-ice-847',
+      train: { category: 'ICE', number: '847', operator: '80' },
+      platform: { planned: '15', actual: '15', changed: false },
+      time: at(24),
+      status: 'onTime',
+      messages: [],
+      destination: { evaNumber: '8011160', name: 'Berlin Südkreuz' },
+      via: [{ name: 'Wolfsburg Hbf' }, { name: 'Berlin Hbf' }],
+      routeChanges: [],
+      coupledWith: ['mock-ice-857'],
+    },
+    {
       // Long name plus an unresolved cause code: tests truncation and the rule that an
       // unknown code renders as nothing rather than as a number.
       kind: 'departure',

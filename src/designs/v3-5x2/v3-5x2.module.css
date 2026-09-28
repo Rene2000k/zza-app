@@ -220,6 +220,19 @@
 }
 
 /*
+ * Lower module row for the second part of a coupled train: the upper row's fields once more,
+ * one module row and the gap further down. Module 5 stays empty — the platform is the upper
+ * row's alone.
+ */
+.secondPart {
+  position: absolute;
+  left: 0;
+  top: 225px;
+  width: 1272px;
+  height: 192px;
+}
+
+/*
  * The seams between modules and the gap between the module rows, laid over everything: on the
  * hardware they are housing, so text that crosses them is interrupted.
  */

@@ -355,21 +355,67 @@ const mapStop = (planStop: Element, changes: Map<string, FchgStop>): BoardEntry 
   return undefined;
 };
 
+/**
+ * The trips a stop runs coupled with, from `wings` on the movement that governs the entry — the
+ * departure, or the arrival of a train ending here (ADR-0014). A train that arrives coupled and
+ * leaves alone is split here and is no longer coupled on this board.
+ */
+const wingTrips = (planStop: Element, changes: Map<string, FchgStop>): string[] => {
+  const change = changes.get(planStop.getAttribute('id') ?? '');
+  const planDp = child(planStop, 'dp');
+  const governing = planDp ?? child(planStop, 'ar');
+  const changed = planDp === undefined ? change?.ar : change?.dp;
+  if (governing === undefined) return [];
+  return splitPath(preferChanged(governing, changed, 'wings'));
+};
+
+/**
+ * `wings` names a partner by its trip — its stop id without the trailing stop index — never
+ * by its stop id: "-8906112445839706377-2609250926" for the stop "-8906112445839706377-2609250926-9".
+ */
+const tripOf = (stopId: string): string => stopId.replace(/-\d+$/, '');
+
+/**
+ * Links the parts of coupled trains to each other. IRIS names the partner on one side only
+ * (live data, 2026-09-25: none of 26 partners pointed back), so the link is made to point both
+ * ways here. A partner outside the mapped entries is dropped rather than left dangling.
+ */
+const linkCoupledParts = (mapped: readonly { entry: BoardEntry; wings: readonly string[] }[]): BoardEntry[] => {
+  const idByTrip = new Map(mapped.map(({ entry }) => [tripOf(entry.id), entry.id]));
+  const links = new Map<string, Set<string>>();
+  const link = (from: string, to: string) => {
+    const known = links.get(from) ?? new Set<string>();
+    links.set(from, known.add(to));
+  };
+  for (const { entry, wings } of mapped) {
+    for (const trip of wings) {
+      const partner = idByTrip.get(trip);
+      if (partner === undefined || partner === entry.id) continue;
+      link(entry.id, partner);
+      link(partner, entry.id);
+    }
+  }
+  return mapped.map(({ entry }) => {
+    const coupledWith = links.get(entry.id);
+    return coupledWith === undefined ? entry : { ...entry, coupledWith: [...coupledWith] };
+  });
+};
+
 /** Maps one or more `plan` hour buckets plus one `fchg` document into board entries. */
 export const mapBoardEntries = (planDocs: readonly Document[], fchgDoc: Document): BoardEntry[] => {
   const changes = indexChanges(fchgDoc);
   const seen = new Set<string>();
-  const entries: BoardEntry[] = [];
+  const mapped: { entry: BoardEntry; wings: string[] }[] = [];
   for (const planDoc of planDocs) {
     for (const s of children(planDoc.documentElement, 's')) {
       const id = s.getAttribute('id');
       if (id === null || seen.has(id)) continue;
       seen.add(id);
       const entry = mapStop(s, changes);
-      if (entry !== undefined) entries.push(entry);
+      if (entry !== undefined) mapped.push({ entry, wings: wingTrips(s, changes) });
     }
   }
-  return entries;
+  return linkCoupledParts(mapped);
 };
 
 /** Maps a `station` response into the (usually single) matching station's details. */
