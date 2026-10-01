@@ -38,6 +38,23 @@ describe('display configuration', () => {
     expect(result.problems.join(' ')).toContain('debug');
   });
 
+  it('names each bad parameter once, in German, with its query key', () => {
+    const result = parseConfig('?station=8000105&refreshSeconds=2.5');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems).toEqual([
+      'Abrufintervall (refreshSeconds): ganze Zahl von 10 bis 600 Sekunden',
+    ]);
+  });
+
+  it('rejects an unknown provider instead of failing when the display starts', () => {
+    const result = parseConfig('?station=8000105&provider=vendo');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems.join(' ')).toContain('„vendo“ gibt es nicht');
+    expect(result.problems.join(' ')).toContain('iris');
+  });
+
   it('round-trips through a share link', () => {
     const parsed = parseConfig('?station=8000105&platform=1a&refreshSeconds=45');
     expect(parsed.ok).toBe(true);
