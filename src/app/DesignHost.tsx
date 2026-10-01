@@ -1,6 +1,7 @@
 import { findDesign } from '@/designs/registry';
 import { useZzaBoard } from '@/hooks/useZzaBoard';
 import { DisplayCanvas } from './DisplayCanvas';
+import { DiagnosticsOverlay } from './diagnostics/DiagnosticsOverlay';
 import type { DisplayConfig } from './config';
 
 export interface DesignHostProps {
@@ -23,8 +24,11 @@ export const DesignHost = ({ config }: DesignHostProps) => {
   }
 
   return (
-    <DisplayCanvas canvas={design.canvas}>
-      <design.Component board={board} />
-    </DisplayCanvas>
+    <>
+      <DisplayCanvas canvas={design.canvas}>
+        <design.Component board={board} />
+      </DisplayCanvas>
+      <DiagnosticsOverlay config={config} board={board} />
+    </>
   );
 };

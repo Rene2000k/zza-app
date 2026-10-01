@@ -2,6 +2,9 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MIN_OUTAGE_MS, PROBE_RETRY_MS, useReloadWhenStuck } from './useReloadWhenStuck';
+import { DiagnosticsContext } from '../diagnostics/DiagnosticsContext';
+import { createDiagnosticsLog } from '../diagnostics/diagnosticsLog';
+import { manualClock } from '@/platform/clock';
 import type { ReactNode } from 'react';
 
 const withQueryClient = (client: QueryClient) =>
@@ -83,6 +86,33 @@ describe('reload after a total outage', () => {
     expect(reload).not.toHaveBeenCalled();
     await act(() => vi.advanceTimersByTimeAsync(5 * 600_000 - MIN_OUTAGE_MS));
     expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it('leaves a line in the diagnostics log before it reloads, and one when it has to wait', async () => {
+    const client = new QueryClient();
+    const log = createDiagnosticsLog(
+      manualClock(new Date('2026-10-01T18:00:00Z')),
+      () => undefined,
+    );
+    const reload = vi.fn();
+    const probe = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+    renderHook(() => useReloadWhenStuck({ refreshSeconds: 30, reload, probe }), {
+      wrapper: ({ children }: { readonly children: ReactNode }) => (
+        <QueryClientProvider client={client}>
+          <DiagnosticsContext.Provider value={log}>{children}</DiagnosticsContext.Provider>
+        </QueryClientProvider>
+      ),
+    });
+
+    await act(() => vi.advanceTimersByTimeAsync(MIN_OUTAGE_MS + PROBE_RETRY_MS));
+    expect(reload).toHaveBeenCalledOnce();
+    expect(log.getSnapshot().entries.map((entry) => entry.text)).toEqual([
+      'Neuladen aufgeschoben: eigene Seite nicht erreichbar',
+      'Neu geladen: seit 10 min keine Daten',
+    ]);
   });
 
   it('counts a real board query as success', async () => {
