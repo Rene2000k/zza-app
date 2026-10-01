@@ -18,6 +18,10 @@ const queryClient = new QueryClient({
 /** Default display when no configuration is given: Frankfurt Hbf, platform 9, mock data. */
 const fallbackSearch = 'station=8000105&platform=9&provider=mock';
 
+/** The setup page next to this display, carrying the current query so the form starts from it. */
+const setupHref = (): string =>
+  `${window.location.pathname.replace(/\/?$/, '/')}setup${window.location.search}`;
+
 export const App = () => {
   const result = useMemo(
     () => parseConfig(window.location.search === '' ? fallbackSearch : window.location.search),
@@ -37,6 +41,9 @@ export const App = () => {
         </ul>
         <p>
           Beispiel: <code>?station=8000105&amp;platform=9&amp;provider=mock</code>
+        </p>
+        <p>
+          <a href={setupHref()}>Zur Einrichtung</a>
         </p>
       </main>
     );
