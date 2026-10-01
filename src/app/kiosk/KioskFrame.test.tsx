@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KioskFrame } from './KioskFrame';
@@ -15,9 +16,11 @@ describe('kiosk frame', () => {
 
   it('hides the cursor once the pointer rests, and shows it on movement', () => {
     render(
-      <KioskFrame>
-        <p>Anzeige</p>
-      </KioskFrame>,
+      <QueryClientProvider client={new QueryClient()}>
+        <KioskFrame refreshSeconds={30}>
+          <p>Anzeige</p>
+        </KioskFrame>
+      </QueryClientProvider>,
     );
     const frame = screen.getByRole('main');
     const restingClass = frame.className;

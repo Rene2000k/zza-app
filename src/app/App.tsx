@@ -48,7 +48,7 @@ export const App = () => {
   return (
     <ClockContext.Provider value={clock}>
       <QueryClientProvider client={queryClient}>
-        <KioskFrame>
+        <KioskFrame refreshSeconds={result.config.refreshSeconds}>
           <DesignHost config={result.config} />
         </KioskFrame>
       </QueryClientProvider>
