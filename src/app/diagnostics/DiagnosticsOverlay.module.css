@@ -1,0 +1,58 @@
+/* A plain technical panel over the display; it explains the picture, it is not part of it. */
+.overlay {
+  position: fixed;
+  inset: 1rem 1rem auto auto;
+  width: min(40rem, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  overflow: auto;
+  padding: 1rem;
+  background: rgb(16 16 20 / 92%);
+  border: 1px solid #2a2a33;
+  color: #eee;
+  font:
+    0.8rem/1.4 ui-monospace,
+    monospace;
+  cursor: auto;
+}
+
+.overlay h2,
+.overlay h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.overlay h3 {
+  margin-top: 1rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.15rem 1rem;
+  margin: 0;
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.raw {
+  max-height: 14rem;
+  overflow: auto;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.entries {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.info {
+  color: #9a9aa6;
+}
+
+.warn {
+  color: #e0a040;
+}

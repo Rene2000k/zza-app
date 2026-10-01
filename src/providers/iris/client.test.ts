@@ -67,6 +67,11 @@ describe('error handling', () => {
     await expect(fetchStation('FF')).rejects.toThrow(/403/);
   });
 
+  it('reports the HTTP status as a field, for diagnostics', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(xmlResponse('Request Rejected', false)));
+    await expect(fetchStation('FF')).rejects.toMatchObject({ name: 'ProviderError', status: 403 });
+  });
+
   it('throws when the body is not valid XML — the ADR-0002 "Request Rejected" failure mode', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(xmlResponse('<html>Request Rejected</html>Request Rejected')));
     await expect(fetchStation('FF')).rejects.toThrow(/XML/);

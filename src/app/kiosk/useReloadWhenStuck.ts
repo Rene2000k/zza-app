@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { matchQuery, useQueryClient } from '@tanstack/react-query';
+import { useDiagnosticsLog } from '../diagnostics/DiagnosticsContext';
+import { formatDuration } from '../diagnostics/diagnosticsLog';
 
 /** No successful board fetch for this long counts as a total outage. */
 export const MIN_OUTAGE_MS = 10 * 60_000;
@@ -41,25 +43,37 @@ export const useReloadWhenStuck = ({
   probe = probePage,
 }: ReloadWhenStuckOptions): void => {
   const queryClient = useQueryClient();
+  const log = useDiagnosticsLog();
   const outageMs = Math.max(MIN_OUTAGE_MS, OUTAGE_POLLS * refreshSeconds * 1000);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     let active = true;
+    // Logged once per outage, not on every retry: a night offline would otherwise fill the log.
+    let deferralLogged = false;
 
+    const defer = () => {
+      if (!active) return;
+      if (!deferralLogged) {
+        log?.note('warn', 'Neuladen aufgeschoben: eigene Seite nicht erreichbar');
+        deferralLogged = true;
+      }
+      timer = setTimeout(tryReload, PROBE_RETRY_MS);
+    };
     const tryReload = () => {
-      probe().then(
-        (reachable) => {
-          if (!active) return;
-          if (reachable) reload();
-          else timer = setTimeout(tryReload, PROBE_RETRY_MS);
-        },
-        () => {
-          if (active) timer = setTimeout(tryReload, PROBE_RETRY_MS);
-        },
-      );
+      probe().then((reachable) => {
+        if (!active) return;
+        if (!reachable) {
+          defer();
+          return;
+        }
+        // The console line is what survives the reload; the in-memory log does not.
+        log?.note('warn', `Neu geladen: seit ${formatDuration(outageMs)} keine Daten`);
+        reload();
+      }, defer);
     };
     const arm = () => {
+      deferralLogged = false;
       clearTimeout(timer);
       timer = setTimeout(tryReload, outageMs);
     };
@@ -79,7 +93,7 @@ export const useReloadWhenStuck = ({
       clearTimeout(timer);
       unsubscribe();
     };
-  }, [queryClient, outageMs, reload, probe]);
+  }, [queryClient, log, outageMs, reload, probe]);
 };
 
 const reloadPage = () => window.location.reload();

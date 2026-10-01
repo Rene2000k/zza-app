@@ -1,3 +1,4 @@
+import { ProviderError } from '@/providers/errors';
 import type { BerlinDateHour } from './berlinTime';
 
 /**
@@ -13,7 +14,7 @@ const parseXml = (text: string): Document => {
   // Rejected" page on a blocked path (ADR-0002) — parses as exactly this kind of
   // non-XML document, so this is also how that surfaces as a fetch failure.
   if (doc.getElementsByTagName('parsererror').length > 0) {
-    throw new Error('IRIS response was not valid XML');
+    throw new ProviderError('IRIS response was not valid XML');
   }
   return doc;
 };
@@ -21,7 +22,10 @@ const parseXml = (text: string): Document => {
 const getXml = async (path: string, signal?: AbortSignal): Promise<Document> => {
   const response = await fetch(`${BASE_URL}${path}`, signal === undefined ? {} : { signal });
   if (!response.ok) {
-    throw new Error(`IRIS request failed: ${response.status} ${response.statusText} (${path})`);
+    throw new ProviderError(
+      `IRIS request failed: ${response.status} ${response.statusText} (${path})`,
+      { status: response.status },
+    );
   }
   return parseXml(await response.text());
 };
