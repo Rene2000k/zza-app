@@ -4,6 +4,7 @@ import { ClockContext } from './ClockContext';
 import { DesignHost } from './DesignHost';
 import styles from './App.module.css';
 import { parseConfig } from './config';
+import { KioskFrame } from './kiosk/KioskFrame';
 import { useConfiguredClock } from '@/hooks/useClock';
 
 const queryClient = new QueryClient({
@@ -47,9 +48,9 @@ export const App = () => {
   return (
     <ClockContext.Provider value={clock}>
       <QueryClientProvider client={queryClient}>
-        <main className={styles.display}>
+        <KioskFrame refreshSeconds={result.config.refreshSeconds}>
           <DesignHost config={result.config} />
-        </main>
+        </KioskFrame>
       </QueryClientProvider>
     </ClockContext.Provider>
   );
