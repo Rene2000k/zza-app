@@ -8,10 +8,14 @@ describe('Pictogram', () => {
       <>
         <Pictogram id="haltPlus" />
         <Pictogram id="haltMinus" />
+        <Pictogram id="platformChange" />
+        <Pictogram id="trainSplit" />
       </>,
     );
     expect(screen.getByRole('img', { name: 'Zusätzlicher Halt' })).toBeDefined();
     expect(screen.getByRole('img', { name: 'Halt entfällt' })).toBeDefined();
+    expect(screen.getByRole('img', { name: 'Gleiswechsel' })).toBeDefined();
+    expect(screen.getByRole('img', { name: 'Zugteilung' })).toBeDefined();
   });
 
   it('is one em tall and paints in the colour of its surroundings', () => {
