@@ -32,18 +32,47 @@ describe('useZzaBoard', () => {
   });
 
   it('makes the next train the current one and the rest the following ones', async () => {
-    const { result } = renderBoard({ platform: '9' });
+    const { result } = renderBoard({ platform: '12' });
     await waitFor(() => expect(result.current.state).toBe('ready'));
 
     const board = result.current;
     if (board.state !== 'ready') throw new Error('expected a ready board');
     expect(board.station.name).toBe('Frankfurt(Main)Hbf');
-    expect(board.platform).toBe('9');
-    expect(board.current?.id).toBe('mock-ice-571');
+    expect(board.platform).toBe('12');
+    expect(board.current?.id).toBe('mock-re-4168');
     // In time order, and without the current train appearing again.
     const times = board.following.map((entry) => entry.time.expected.getTime());
     expect([...times].sort((a, b) => a - b)).toEqual(times);
-    expect(board.following.some((entry) => entry.id === 'mock-ice-571')).toBe(false);
+    expect(board.following.some((entry) => entry.id === 'mock-re-4168')).toBe(false);
+  });
+
+  it('moves trains that do not leave from here to the top of the following trains', async () => {
+    const { result } = renderBoard({ platform: '9' });
+    await waitFor(() => expect(result.current.state).toBe('ready'));
+
+    const board = result.current;
+    if (board.state !== 'ready') throw new Error('expected a ready board');
+    expect(board.current?.id).toBe('mock-ice-571');
+    // RE 4271 left 9 for 4 (ADR-0006) and RB 15702 is cancelled: both lead, although IC 2310
+    // and RB 15645 leave earlier. IC 2310 changed to 9 and stays in its place.
+    expect(board.following.map((entry) => entry.id)).toEqual([
+      'mock-re-4271',
+      'mock-rb-15702',
+      'mock-ic-2310',
+      'mock-rb-15645',
+      'mock-ice-1006',
+    ]);
+  });
+
+  it('moves only cancelled trains on a station-wide display, which no train can leave', async () => {
+    const { result } = renderBoard();
+    await waitFor(() => expect(result.current.state).toBe('ready'));
+
+    const board = result.current;
+    if (board.state !== 'ready') throw new Error('expected a ready board');
+    expect(board.following[0]?.id).toBe('mock-rb-15702');
+    const times = board.following.slice(1).map((entry) => entry.time.expected.getTime());
+    expect([...times].sort((a, b) => a - b)).toEqual(times);
   });
 
   it('offers the current train’s resolved messages for a running line', async () => {

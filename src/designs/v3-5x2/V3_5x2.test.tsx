@@ -409,6 +409,15 @@ describe('V3 5X2 design', () => {
     expect(screen.getByText('Zug endet hier')).toBeDefined();
   });
 
+  it('says in its running line that a following train left this platform', () => {
+    show(
+      ready({
+        following: [departure({ id: 'x', platform: { planned: '9', actual: '4', changed: true } })],
+      }),
+    );
+    expect(screen.getByText('Heute von Gleis 4')).toBeDefined();
+  });
+
   it('marks a cancelled following train in its own running line', () => {
     show(ready({ following: [departure({ id: 'x', status: 'cancelled' })] }));
     expect(screen.getByText('Fällt aus')).toBeDefined();

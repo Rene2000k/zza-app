@@ -69,6 +69,16 @@ tracked as a separate, later piece of work.
   gap, not a defect in this decision, which only concerns whether the data is still there to render
   correctly once that work happens.
 
+**Addendum (2026-10-02) — the repositioning.** The follow-up turned out not to depend on a
+design's layout: every design has a main slot and following rows, so the rule sits in the view
+model that fills them, not in each design. On a platform display, an entry that changed away
+from that platform never becomes the main train; it moves to the top of the following trains,
+ahead of those that stay, and the next train that really leaves from here takes the main slot.
+Several such entries keep their time order among themselves. A station-wide display has no
+platform to leave and keeps plain time order. The designs mark the row — V4 inverts it and
+names the new platform, V3 runs "Heute von Gleis 4" behind it — so the gap named above is
+closed.
+
 ## Pros and Cons of the Options
 
 ### O01 — Match the actual platform only

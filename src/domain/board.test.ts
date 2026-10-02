@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { dataAgeSeconds, entriesForPlatform, isStale, relevantEntries } from './board';
+import {
+  changedAwayFrom,
+  dataAgeSeconds,
+  entriesForPlatform,
+  isStale,
+  relevantEntries,
+} from './board';
 import { headlineStation, sortByTime } from './boardEntry';
 import type { StationBoard } from './board';
 import type { BoardEntry } from './boardEntry';
@@ -104,6 +110,12 @@ describe('entriesForPlatform (ADR-0006)', () => {
   it('excludes an entry with no planned or actual claim on the platform', () => {
     const entry = onPlatform('7', '4', true);
     expect(entriesForPlatform([entry], '9')).toEqual([]);
+  });
+
+  it('tells an entry that changed away from one that changed here or stayed', () => {
+    expect(changedAwayFrom(onPlatform('9', '4', true), '9')).toBe(true);
+    expect(changedAwayFrom(onPlatform('7', '9', true), '9')).toBe(false);
+    expect(changedAwayFrom(onPlatform('9', '9', false), '9')).toBe(false);
   });
 });
 

@@ -53,7 +53,7 @@ export const V3_5x2 = ({ board }: V3_5x2Props) => {
         <>
           <div className={styles.followingLabel}>Folgezüge:</div>
           {ready?.following.slice(0, FOLLOWING_ROWS).map((entry, row) => (
-            <FollowingTrain key={entry.id} entry={entry} row={row} />
+            <FollowingTrain key={entry.id} entry={entry} row={row} platform={ready?.platform} />
           ))}
         </>
       ) : (
@@ -130,7 +130,15 @@ const MainTrain = ({ entry }: { readonly entry: BoardEntry }) => (
   </>
 );
 
-const FollowingTrain = ({ entry, row }: { readonly entry: BoardEntry; readonly row: number }) => (
+const FollowingTrain = ({
+  entry,
+  row,
+  platform,
+}: {
+  readonly entry: BoardEntry;
+  readonly row: number;
+  readonly platform: string | undefined;
+}) => (
   <div className={row === 0 ? styles.followingFirst : styles.followingSecond}>
     <div className={styles.followingTime}>{formatClockTime(entry.time.planned)}</div>
     <DeviationField className={styles.followingDeviation} entry={entry} />
@@ -140,7 +148,7 @@ const FollowingTrain = ({ entry, row }: { readonly entry: BoardEntry; readonly r
     <div className={styles.followingDestination}>
       <FittedText>{headline(entry)}</FittedText>
     </div>
-    <RunningLine className={styles.followingHint} messages={followingHints(entry)} />
+    <RunningLine className={styles.followingHint} messages={followingHints(entry, platform)} />
   </div>
 );
 
@@ -261,8 +269,10 @@ const splitNotice = (entry: BoardEntry, partner: BoardEntry | undefined): BoardM
   return stop === undefined ? [] : [notice(`Zug wird in ${stop.name} geteilt`)];
 };
 
-const followingHints = (entry: BoardEntry): readonly BoardMessage[] =>
+/** A train that changed away leads the following rows, and its line says so first. */
+const followingHints = (entry: BoardEntry, platform: string | undefined): readonly BoardMessage[] =>
   unique([
+    ...platformChange(entry, platform),
     ...statusNotices(entry, entry.messages, 'Fällt aus'),
     ...(entry.kind === 'terminatingArrival' ? [notice('Zug endet hier')] : []),
     ...routeNotices(entry),
@@ -291,8 +301,10 @@ const delayNotice = (entry: BoardEntry): BoardMessage[] => {
 };
 
 /**
- * Only announced for now: moving the train into the following rows is a later step, so the
- * platform field itself keeps showing the platform the display stands at.
+ * A train that left this display's platform. On a platform display the view model never makes
+ * it the main train but puts it at the top of the following rows (ADR-0006), so in practice
+ * the main train carries this only on a station-wide display. The platform field keeps
+ * showing the platform the display stands at.
  */
 const platformChange = (entry: BoardEntry, platform: string | undefined): BoardMessage[] => {
   const { actual, changed } = entry.platform;
