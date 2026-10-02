@@ -33,6 +33,27 @@ describe('kiosk frame', () => {
     fireEvent.pointerMove(window);
     expect(frame.hasAttribute('data-idle')).toBe(false);
   });
+
+  it('counts the pointer leaving the window as idle at once, but not moving between elements', () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <KioskFrame refreshSeconds={30}>
+          <p>Anzeige</p>
+        </KioskFrame>
+      </QueryClientProvider>,
+    );
+    const frame = screen.getByRole('main');
+    fireEvent.pointerMove(window);
+
+    fireEvent.pointerOut(frame, { relatedTarget: screen.getByText('Anzeige') });
+    expect(frame.hasAttribute('data-idle')).toBe(false);
+
+    fireEvent.pointerOut(frame, { relatedTarget: null });
+    expect(frame.hasAttribute('data-idle')).toBe(true);
+
+    fireEvent.pointerMove(window);
+    expect(frame.hasAttribute('data-idle')).toBe(false);
+  });
 });
 
 describe('fullscreen key', () => {
