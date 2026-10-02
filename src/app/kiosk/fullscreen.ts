@@ -1,3 +1,5 @@
+import { isShortcut } from '../shortcuts';
+
 /**
  * Switches the whole page into fullscreen and back.
  *
@@ -14,5 +16,4 @@ export const toggleFullscreen = (): void => {
 };
 
 /** The key that toggles fullscreen — "f", as in video players. */
-export const isFullscreenKey = (event: KeyboardEvent): boolean =>
-  event.key.toLowerCase() === 'f' && !event.ctrlKey && !event.metaKey && !event.altKey;
+export const isFullscreenKey = (event: KeyboardEvent): boolean => isShortcut(event, 'f');

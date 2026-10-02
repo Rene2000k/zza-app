@@ -42,6 +42,19 @@ describe('fullscreen key', () => {
     expect(isFullscreenKey(new KeyboardEvent('keydown', { key: 'f', ctrlKey: true }))).toBe(false);
     expect(isFullscreenKey(new KeyboardEvent('keydown', { key: 'g' }))).toBe(false);
   });
+
+  it('is ignored while typing into a field', () => {
+    const input = document.createElement('input');
+    document.body.append(input);
+    const typed = new KeyboardEvent('keydown', { key: 'f', bubbles: true });
+    let result: boolean | undefined;
+    window.addEventListener('keydown', (event) => (result = isFullscreenKey(event)), {
+      once: true,
+    });
+    input.dispatchEvent(typed);
+    expect(result).toBe(false);
+    input.remove();
+  });
 });
 
 describe('wake lock', () => {

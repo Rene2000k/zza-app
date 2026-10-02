@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useDiagnosticsLog } from './DiagnosticsContext';
 import styles from './DiagnosticsOverlay.module.css';
 import { formatDuration } from './diagnosticsLog';
+import { isShortcut } from '../shortcuts';
 import type { DiagnosticsLog, DiagnosticsSnapshot } from './diagnosticsLog';
 import type { DisplayConfig } from '../config';
 import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
@@ -10,8 +11,7 @@ import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 const SHOWN_ENTRIES = 50;
 
 /** The key that shows and hides the view — "d" for diagnostics. */
-const isDiagnosticsKey = (event: KeyboardEvent): boolean =>
-  event.key.toLowerCase() === 'd' && !event.ctrlKey && !event.metaKey && !event.altKey;
+const isDiagnosticsKey = (event: KeyboardEvent): boolean => isShortcut(event, 'd');
 
 export interface DiagnosticsOverlayProps {
   readonly config: DisplayConfig;
@@ -51,7 +51,12 @@ const OverlayContent = ({
   const snapshot = useSyncExternalStore(log.subscribe, log.getSnapshot);
 
   return (
-    <aside className={styles.overlay} aria-label="Diagnose">
+    <aside
+      className={styles.overlay}
+      aria-label="Diagnose"
+      // A double-click here selects text; it must not reach the frame and toggle fullscreen.
+      onDoubleClick={(event) => event.stopPropagation()}
+    >
       <h2>Diagnose</h2>
       <dl className={styles.facts}>
         <dt>Konfiguration</dt>
