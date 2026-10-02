@@ -5,6 +5,6 @@
   overflow: hidden;
 }
 
-.idle {
+.frame[data-idle] {
   cursor: none;
 }

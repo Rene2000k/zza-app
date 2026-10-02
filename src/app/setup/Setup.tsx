@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { designIds, findDesign } from '@/designs/registry';
-import { useStationLookup } from '@/hooks/useStationLookup';
-import type { StationLookup } from '@/hooks/useStationLookup';
-import { createProvider, providerIds } from '@/providers/registry';
+import { designIds } from '@/designs/registry';
+import { providerIds } from '@/providers/registry';
 import { displayConfigSchema, parseConfig, toSearch } from '../config';
+import { ConfigFields } from './ConfigFields';
+import { fieldParams } from './configFieldValues';
 import styles from './Setup.module.css';
+import type { ConfigFieldValues } from './configFieldValues';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false } },
 });
-
-const providers = providerIds().map((id) => ({ id, name: createProvider(id).name }));
 
 /** The source a new display is set up with unless the link says otherwise: the real one. */
 const DEFAULT_PROVIDER = 'iris';
@@ -35,12 +34,15 @@ const SetupForm = () => {
   const [initial] = useState(() => new URLSearchParams(window.location.search));
   const defaults = displayConfigSchema.shape;
 
-  const [station, setStation] = useState(initial.get('station') ?? '');
-  const [platform, setPlatform] = useState(initial.get('platform') ?? '');
-  const [design, setDesign] = useState(initial.get('design') ?? designIds()[0] ?? '');
-  const [provider, setProvider] = useState(() => {
+  const [fields, setFields] = useState<ConfigFieldValues>(() => {
     const requested = initial.get('provider');
-    return requested !== null && providerIds().includes(requested) ? requested : DEFAULT_PROVIDER;
+    return {
+      station: initial.get('station') ?? '',
+      platform: initial.get('platform') ?? '',
+      design: initial.get('design') ?? designIds()[0] ?? '',
+      provider:
+        requested !== null && providerIds().includes(requested) ? requested : DEFAULT_PROVIDER,
+    };
   });
   const [refreshSeconds, setRefreshSeconds] = useState(
     initial.get('refreshSeconds') ?? String(defaults.refreshSeconds.parse(undefined)),
@@ -61,91 +63,17 @@ const SetupForm = () => {
       );
   };
 
-  const trimmedStation = station.trim();
-  const trimmedPlatform = platform.trim();
-  const lookup = useStationLookup(provider, trimmedStation);
-
   const result = parseConfig(
-    new URLSearchParams({
-      station: trimmedStation,
-      ...(trimmedPlatform === '' ? {} : { platform: trimmedPlatform }),
-      design,
-      provider,
-      refreshSeconds,
-      horizonMinutes,
-    }).toString(),
+    new URLSearchParams({ ...fieldParams(fields), refreshSeconds, horizonMinutes }).toString(),
   );
   const link = result.ok ? displayUrl(toSearch(result.config)) : undefined;
-  const canvas = findDesign(design)?.canvas;
 
   return (
     <main className={styles.page}>
       <h1>Anzeige einrichten</h1>
 
       <form className={styles.form} onSubmit={(event) => event.preventDefault()}>
-        <label htmlFor="setup-station">Bahnhof (EVA-Nummer)</label>
-        <div>
-          <input
-            id="setup-station"
-            inputMode="numeric"
-            placeholder="z. B. 8000105"
-            value={station}
-            onChange={(event) => setStation(event.target.value)}
-          />
-          <p className={styles.hint} aria-live="polite">
-            {stationHint(lookup)}
-          </p>
-        </div>
-
-        <label htmlFor="setup-platform">Gleis</label>
-        <div>
-          <input
-            id="setup-platform"
-            list="setup-platforms"
-            placeholder="leer = alle Gleise"
-            value={platform}
-            onChange={(event) => setPlatform(event.target.value)}
-          />
-          <datalist id="setup-platforms">
-            {/* IRIS reports platforms in no useful order ("22|23|24|1a|10|…"); a form sorts them. */}
-            {lookup.station?.platforms.toSorted(byPlatformLabel).map((label) => (
-              <option key={label} value={label} />
-            ))}
-          </datalist>
-        </div>
-
-        <label htmlFor="setup-design">Design</label>
-        <div>
-          <select
-            id="setup-design"
-            value={design}
-            onChange={(event) => setDesign(event.target.value)}
-          >
-            {designIds().map((id) => (
-              <option key={id} value={id}>
-                {findDesign(id)?.name ?? id}
-              </option>
-            ))}
-          </select>
-          {canvas !== undefined ? (
-            <p className={styles.hint}>
-              {canvas.width} × {canvas.height} px
-            </p>
-          ) : null}
-        </div>
-
-        <label htmlFor="setup-provider">Datenquelle</label>
-        <select
-          id="setup-provider"
-          value={provider}
-          onChange={(event) => setProvider(event.target.value)}
-        >
-          {providers.map(({ id, name }) => (
-            <option key={id} value={id}>
-              {name}
-            </option>
-          ))}
-        </select>
+        <ConfigFields idPrefix="setup" values={fields} onChange={setFields} />
 
         <label htmlFor="setup-refresh">Abrufintervall (s)</label>
         <input
@@ -195,21 +123,6 @@ const SetupForm = () => {
     </main>
   );
 };
-
-const stationHint = ({ station, isLoading, error }: StationLookup) => {
-  if (isLoading) return 'Suche …';
-  // The provider's own message is technical and English; here it only matters that the
-  // number could not be checked — the link still works if the number is right.
-  if (error !== null)
-    return 'Bahnhof konnte nicht geprüft werden, die Datenquelle antwortet nicht.';
-  if (station === null) return 'Unter dieser Nummer ist kein Bahnhof bekannt.';
-  if (station !== undefined) return station.name;
-  return '';
-};
-
-/** Numbers by value, a lettered platform right after its number: 1, 1a, 2, …, 10. */
-const byPlatformLabel = (a: string, b: string): number =>
-  a.localeCompare(b, 'de', { numeric: true });
 
 /** The display lives next to this page: same path, minus the trailing `setup`. */
 const displayUrl = (search: string): string => {

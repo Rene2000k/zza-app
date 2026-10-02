@@ -6,6 +6,8 @@ import styles from './App.module.css';
 import { parseConfig } from './config';
 import { Diagnostics } from './diagnostics/Diagnostics';
 import { KioskFrame } from './kiosk/KioskFrame';
+import { setupHref } from './links';
+import { QuickSwitch } from './quickSwitch/QuickSwitch';
 import { useConfiguredClock } from '@/hooks/useClock';
 
 const queryClient = new QueryClient({
@@ -16,10 +18,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-/** The setup page next to this display, carrying the current query so the form starts from it. */
-const setupHref = (): string =>
-  `${window.location.pathname.replace(/\/?$/, '/')}setup${window.location.search}`;
 
 export const App = () => {
   // Only reached with a query: without one, the root shows the setup page instead.
@@ -52,6 +50,7 @@ export const App = () => {
         <Diagnostics config={result.config}>
           <KioskFrame refreshSeconds={result.config.refreshSeconds}>
             <DesignHost config={result.config} />
+            <QuickSwitch config={result.config} />
           </KioskFrame>
         </Diagnostics>
       </QueryClientProvider>

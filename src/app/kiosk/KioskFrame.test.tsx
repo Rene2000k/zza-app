@@ -23,15 +23,36 @@ describe('kiosk frame', () => {
       </QueryClientProvider>,
     );
     const frame = screen.getByRole('main');
-    const restingClass = frame.className;
+    expect(frame.hasAttribute('data-idle')).toBe(false);
 
     act(() => {
       vi.advanceTimersByTime(CURSOR_IDLE_MS);
     });
-    expect(frame.className).not.toBe(restingClass);
+    expect(frame.hasAttribute('data-idle')).toBe(true);
 
     fireEvent.pointerMove(window);
-    expect(frame.className).toBe(restingClass);
+    expect(frame.hasAttribute('data-idle')).toBe(false);
+  });
+
+  it('counts the pointer leaving the window as idle at once, but not moving between elements', () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <KioskFrame refreshSeconds={30}>
+          <p>Anzeige</p>
+        </KioskFrame>
+      </QueryClientProvider>,
+    );
+    const frame = screen.getByRole('main');
+    fireEvent.pointerMove(window);
+
+    fireEvent.pointerOut(frame, { relatedTarget: screen.getByText('Anzeige') });
+    expect(frame.hasAttribute('data-idle')).toBe(false);
+
+    fireEvent.pointerOut(frame, { relatedTarget: null });
+    expect(frame.hasAttribute('data-idle')).toBe(true);
+
+    fireEvent.pointerMove(window);
+    expect(frame.hasAttribute('data-idle')).toBe(false);
   });
 });
 
@@ -41,6 +62,19 @@ describe('fullscreen key', () => {
     expect(isFullscreenKey(new KeyboardEvent('keydown', { key: 'F' }))).toBe(true);
     expect(isFullscreenKey(new KeyboardEvent('keydown', { key: 'f', ctrlKey: true }))).toBe(false);
     expect(isFullscreenKey(new KeyboardEvent('keydown', { key: 'g' }))).toBe(false);
+  });
+
+  it('is ignored while typing into a field', () => {
+    const input = document.createElement('input');
+    document.body.append(input);
+    const typed = new KeyboardEvent('keydown', { key: 'f', bubbles: true });
+    let result: boolean | undefined;
+    window.addEventListener('keydown', (event) => (result = isFullscreenKey(event)), {
+      once: true,
+    });
+    input.dispatchEvent(typed);
+    expect(result).toBe(false);
+    input.remove();
   });
 });
 
