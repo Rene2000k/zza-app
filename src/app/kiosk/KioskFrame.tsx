@@ -35,7 +35,10 @@ export const KioskFrame = ({ refreshSeconds, children }: KioskFrameProps) => {
 
   return (
     <main
-      className={idle ? `${styles.frame} ${styles.idle}` : styles.frame}
+      className={styles.frame}
+      // An attribute rather than a class, so controls on the display (the quick-switch
+      // button) can fade out together with the cursor.
+      data-idle={idle ? '' : undefined}
       onDoubleClick={toggleFullscreen}
     >
       {children}

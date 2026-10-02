@@ -23,15 +23,15 @@ describe('kiosk frame', () => {
       </QueryClientProvider>,
     );
     const frame = screen.getByRole('main');
-    const restingClass = frame.className;
+    expect(frame.hasAttribute('data-idle')).toBe(false);
 
     act(() => {
       vi.advanceTimersByTime(CURSOR_IDLE_MS);
     });
-    expect(frame.className).not.toBe(restingClass);
+    expect(frame.hasAttribute('data-idle')).toBe(true);
 
     fireEvent.pointerMove(window);
-    expect(frame.className).toBe(restingClass);
+    expect(frame.hasAttribute('data-idle')).toBe(false);
   });
 });
 
