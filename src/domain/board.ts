@@ -63,3 +63,12 @@ export const entriesForPlatform = (
       isSamePlatform(entry.platform.actual, platform) ||
       isSamePlatform(entry.platform.planned, platform),
   );
+
+/**
+ * True for an entry that was moved off `platform` to another one: it no longer leaves from
+ * here, but a platform display keeps pointing to where it went (ADR-0006).
+ */
+export const changedAwayFrom = (entry: BoardEntry, platform: string): boolean =>
+  entry.platform.changed &&
+  entry.platform.actual !== undefined &&
+  !isSamePlatform(entry.platform.actual, platform);

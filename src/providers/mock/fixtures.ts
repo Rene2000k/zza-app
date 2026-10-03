@@ -107,9 +107,8 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
     },
     {
       // Left platform 9 for platform 4 (ADR-0006): the platform-9 board must still show
-      // it, marked as changed, not drop it as if it never existed. Where it is placed on
-      // the display ("Folgezüge" with a Gleis-4 hint) is the display layer's concern; the
-      // domain model only has to keep the data.
+      // it, marked as changed, not drop it as if it never existed. The view model moves it
+      // to the top of the following trains, ahead of the earlier trains that stay on 9.
       kind: 'departure',
       id: 'mock-re-4271',
       train: { category: 'RE', number: '4271', line: 'RE59', operator: '80' },
@@ -133,7 +132,8 @@ export const mockEntries = (reference: Date): BoardEntry[] => {
       origin: { evaNumber: '8000770', name: 'Dieburg' },
     },
     {
-      // Cancelled: still listed, marked as not running.
+      // Cancelled: still listed, marked as not running, and moved to the top of the following
+      // trains by the view model like a train that changed away.
       kind: 'departure',
       id: 'mock-rb-15702',
       train: { category: 'RB', number: '15702', line: 'RB58', operator: '80' },

@@ -219,14 +219,14 @@ export const previewScenarios: readonly PreviewScenario[] = [
   {
     id: 'regelbetrieb',
     name: 'Regelbetrieb',
-    board: ready({ current: ice, following: [movedAway, terminating, cancelled] }),
+    board: ready({ current: ice, following: [movedAway, cancelled, terminating] }),
   },
   {
     id: 'verspaetung',
     name: 'Verspätung mit Ursache',
     board: ready({
       current: regional,
-      following: [terminating, cancelled],
+      following: [cancelled, terminating],
       messages: [
         { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
       ],
@@ -235,11 +235,9 @@ export const previewScenarios: readonly PreviewScenario[] = [
   {
     id: 'ausfall',
     name: 'Ausfall',
-    board: ready({
-      current: cancelled,
-      following: [ice],
-      messages: [{ kind: 'cancellation', code: '80', text: 'Zug fällt aus' }],
-    }),
+    // RB 15702 would be next, but does not run: it leads the following trains, and the next
+    // train that does run takes the main slot.
+    board: ready({ current: replacement, following: [cancelled, longName] }),
   },
   {
     id: 'qualitaetsmeldungen',
@@ -263,11 +261,9 @@ export const previewScenarios: readonly PreviewScenario[] = [
   {
     id: 'gleiswechsel',
     name: 'Gleiswechsel weg von Gleis 9',
-    board: ready({
-      current: movedAway,
-      following: [ice, terminating],
-      messages: [{ kind: 'info', code: '900', text: 'Gleiswechsel' }],
-    }),
+    // RE 4271 would be next, but leaves from 4: it leads the following trains, and the next
+    // train that really leaves from 9 takes the main slot (ADR-0006).
+    board: ready({ current: regional, following: [movedAway, cancelled] }),
   },
   {
     id: 'endender-zug',

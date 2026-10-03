@@ -1,4 +1,4 @@
-import { dataAgeSeconds, isStale, relevantEntries } from '@/domain/board';
+import { changedAwayFrom, dataAgeSeconds, isStale, relevantEntries } from '@/domain/board';
 import { sortByTime } from '@/domain/boardEntry';
 import { collapseCoupledParts, coupledPartners } from '@/domain/coupling';
 import { displayableMessages } from '@/domain/message';
@@ -40,7 +40,11 @@ export interface ReadyBoard {
    * not repeated among the following trains; a part that goes the same way is not shown at all.
    */
   readonly secondPart: BoardEntry | undefined;
-  /** Trains after the current one, in time order. A design shows as many as it has rows for. */
+  /**
+   * Trains after the current one: first those that do not leave from here — cancelled, or
+   * changed away from this platform — then the rest, each group in time order. A design shows
+   * as many as it has rows for.
+   */
   readonly following: readonly BoardEntry[];
   /** Messages of the current train that have a text — material for a running line. */
   readonly messages: readonly BoardMessage[];
@@ -56,10 +60,13 @@ const UNAVAILABLE: UnavailableBoard = { state: 'unavailable' };
 /**
  * Turns the polled board into the state a design renders.
  *
- * The slots are assigned by time alone: the next relevant entry is the main train, the rest
- * follow — except for a coupled main train, whose second part stands beside it. A train that changed away from this platform therefore keeps its place in the
- * order instead of being pushed into the following rows — the real displays do move it, but
- * that rule needs its own work and is deliberately not guessed at here.
+ * The slots are assigned by time: the next relevant entry is the main train, the rest follow —
+ * except for a coupled main train, whose second part stands beside it, and for trains that do
+ * not leave from here: those that are cancelled, and those that changed away from this
+ * display's platform (ADR-0006). They never become the main train; they move to the top of
+ * the following trains, where a design marks them, and the next train that really leaves here
+ * moves up. A station-wide display has no platform to leave, so there only cancelled trains
+ * move.
  */
 export const useZzaBoard = (config: DisplayConfig): ZzaBoardViewModel => {
   const now = useNow();
@@ -71,16 +78,20 @@ export const useZzaBoard = (config: DisplayConfig): ZzaBoardViewModel => {
   const entries = collapseCoupledParts(
     sortByTime(relevantEntries(board.entries, now, { horizonMinutes: config.horizonMinutes })),
   );
-  const [current, ...rest] = entries;
+  const { platform } = board;
+  const leavesNotHere = (entry: BoardEntry) =>
+    entry.status === 'cancelled' || (platform !== undefined && changedAwayFrom(entry, platform));
+  const [current, ...rest] = entries.filter((entry) => !leavesNotHere(entry));
+  // A cancelled part is no second part: the other one runs alone and it is listed below.
   const secondPart = current === undefined ? undefined : coupledPartners(current, rest)[0];
 
   return {
     state: 'ready',
     station: board.station,
-    platform: board.platform,
+    platform,
     current,
     secondPart,
-    following: rest.filter((entry) => entry !== secondPart),
+    following: [...entries.filter(leavesNotHere), ...rest.filter((entry) => entry !== secondPart)],
     messages: tickerMessages(current),
     dataAgeSeconds: dataAgeSeconds(board, now),
     stale: isStale(board, now, staleAfterSeconds),

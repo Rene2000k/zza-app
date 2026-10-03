@@ -86,8 +86,10 @@ the stylesheet converts it to `font-size` through the family's cap ratio (ADR-00
   "Verspätung ca. 10 Min.", rounded down to five minutes, so nothing is said below five; only the
   following rows carry a "+7" field.
 - **What runs in the running lines** is a selection: cancellation, replacement, the delay and a
-  platform change. Delay causes and disruption reports do not. Quality notices — missing coaches,
-  no bicycles, no restaurant, a skipped stop — belong there too, but the source's notices of that
+  platform change. A train that left this platform leads the following rows (ADR-0006), and its
+  line opens with "Heute von Gleis 4"; a cancelled train leads them the same way, reading "Fällt
+  aus". Delay causes and disruption reports do not. Quality notices — missing coaches, no
+  bicycles, no restaurant, a skipped stop — belong there too, but the source's notices of that
   kind are not mapped yet.
 - **Several notices** are joined by " +++ " and the line also ends on one, so it reads the same when
   it starts over. A single notice stands alone.
