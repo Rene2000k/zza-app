@@ -1,0 +1,361 @@
+/*
+ * V4 5X2 on its 1208 × 351 canvas: five modules of 240 × 160 px with 2 px seams, two module
+ * rows 31 px apart. Positions were measured on reference renderings and photographs and
+ * converted at 1.5625 canvas px per rendering px; the derivation and the band tables are in
+ * layout.md.
+ */
+.display {
+  --v4-lit: #0d2ca2;
+  --v4-ink: #fefefe;
+  --v4-unlit: #030b26;
+  /* Cap height per em of the typeface. Type below is given as cap height (ADR-0010). */
+  --v4-cap: 0.711;
+  --zza-formation-stroke: 3px;
+
+  position: relative;
+  width: 1208px;
+  height: 351px;
+  overflow: hidden;
+  background: var(--v4-lit);
+  color: var(--v4-ink);
+  font-family: 'Roboto Condensed', sans-serif;
+  font-weight: 400;
+  /* Room below the baseline, so squeezed and running fields do not clip descenders. */
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* A field is a fixed box: its text sits vertically centred and cannot widen it. */
+.field {
+  position: absolute;
+  display: flex;
+  align-items: center;
+}
+
+.field > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inverted {
+  background: var(--v4-ink);
+  color: var(--v4-lit);
+}
+
+.invertible[data-inverted='true'] {
+  background: var(--v4-ink);
+  color: var(--v4-lit);
+}
+
+/* A train's running line is cut off from what stands below it by a rule, not by inversion. */
+.ruled[data-ruled='true'] {
+  box-shadow: 0 2px 0 var(--v4-ink);
+}
+
+.cap16 {
+  font-size: calc(16px / var(--v4-cap));
+}
+
+.cap23 {
+  font-size: calc(23px / var(--v4-cap));
+}
+
+.cap58 {
+  font-size: calc(58px / var(--v4-cap));
+}
+
+/* Upper module row — the band at the top: a train's running line, or a notice for all. */
+
+.mainHint {
+  composes: field ruled cap23;
+  left: 344px;
+  top: 0;
+  width: 864px;
+  height: 35px;
+}
+
+.banner {
+  composes: field invertible cap23;
+  left: 0;
+  top: 0;
+  width: 1208px;
+  height: 35px;
+  padding-left: 3px;
+}
+
+/* Upper module row — left: train and halt boxes, time and expected time. */
+
+.train {
+  composes: field cap23;
+  left: 0;
+  top: 40px;
+  width: 206px;
+  height: 38px;
+  padding-left: 3px;
+}
+
+/* As tall as an inverted field, standing where V4 shows its pictograms beside the train. */
+.pictograms {
+  position: absolute;
+  left: 206px;
+  top: 42px;
+  display: flex;
+  gap: 4px;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.time {
+  composes: field cap58;
+  left: 0;
+  top: 68px;
+  width: 206px;
+  height: 92px;
+  padding-left: 3px;
+}
+
+.expected {
+  composes: field inverted cap23;
+  left: 206px;
+  top: 103px;
+  width: 85px;
+  height: 40px;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Upper module row — the text column: via stops and destination. */
+
+.via {
+  composes: field cap23;
+  left: 344px;
+  top: 40px;
+  width: 864px;
+  height: 38px;
+  padding-right: 3px;
+}
+
+/* Without a running line the via list may take the band above as a second line. */
+.viaTwoLines {
+  composes: field cap23;
+  left: 344px;
+  top: 0;
+  width: 864px;
+  height: 78px;
+  align-items: flex-end;
+  padding-right: 3px;
+}
+
+.viaLines {
+  max-height: 78px;
+  overflow: hidden;
+  line-height: 39px;
+  white-space: normal;
+}
+
+.viaStop {
+  white-space: nowrap;
+}
+
+.destination {
+  composes: field cap58;
+  left: 344px;
+  top: 68px;
+  width: 864px;
+  height: 92px;
+}
+
+/* Lower module row — the coach sequence above the rule. */
+
+.formation {
+  composes: cap16;
+  position: absolute;
+  left: 344px;
+  top: 193px;
+  width: 716px;
+  height: 64px;
+}
+
+.rule {
+  position: absolute;
+  left: 0;
+  top: 273px;
+  width: 1208px;
+  height: 2px;
+  background: var(--v4-ink);
+}
+
+/* One following row less while a second part takes the lower row. */
+.ruleLow {
+  composes: rule;
+  top: 311px;
+}
+
+/*
+ * Lower module row — the second part of a coupled train, joined to the first by a bracket
+ * that runs from one destination to the other, through the gap between the module rows.
+ */
+
+.bracket {
+  position: absolute;
+  left: 318px;
+  top: 113px;
+  width: 18px;
+  height: 148px;
+  border: 4px solid var(--v4-ink);
+  border-right: none;
+}
+
+.secondTrain {
+  composes: field cap23;
+  left: 0;
+  top: 193px;
+  width: 206px;
+  height: 38px;
+  padding-left: 3px;
+}
+
+.secondHint {
+  composes: field ruled cap23;
+  left: 344px;
+  top: 193px;
+  width: 864px;
+  height: 35px;
+}
+
+/* Its via stops, where no notice of its own needs the line. */
+.secondVia {
+  composes: field cap23;
+  left: 344px;
+  top: 193px;
+  width: 864px;
+  height: 35px;
+  padding-right: 3px;
+}
+
+.secondDestination {
+  composes: field cap58;
+  left: 344px;
+  top: 218px;
+  width: 864px;
+  height: 92px;
+}
+
+/*
+ * A train ending here — train, time and expected time as for a departure; the text column keeps
+ * people off it, and the lower row says it ends.
+ */
+
+.boardingWarning {
+  composes: field cap23;
+  left: 344px;
+  top: 38px;
+  width: 864px;
+  height: 36px;
+  box-shadow: 0 2px 0 var(--v4-ink);
+}
+
+.arrivalOrigin {
+  composes: field cap23;
+  left: 344px;
+  top: 82px;
+  width: 864px;
+  height: 38px;
+}
+
+.arrivalHeadline {
+  composes: field cap58;
+  left: 344px;
+  /* Cap top at the module edge, so the descenders stay clear of the rule below. */
+  top: 182px;
+  width: 864px;
+  height: 82px;
+}
+
+/* Lower module row — the following trains, one line each. */
+
+.row {
+  composes: invertible cap23;
+  position: absolute;
+  left: 0;
+  width: 1208px;
+  height: 38px;
+}
+
+.rowUpper {
+  composes: row;
+  top: 275px;
+}
+
+.rowLower {
+  composes: row;
+  top: 313px;
+}
+
+.followingTime {
+  composes: field;
+  left: 0;
+  top: 0;
+  width: 196px;
+  height: 38px;
+  justify-content: flex-end;
+  padding-right: 8px;
+  text-align: right;
+}
+
+.followingExpected {
+  composes: field inverted;
+  left: 206px;
+  top: 3px;
+  width: 85px;
+  height: 32px;
+  justify-content: center;
+  text-align: center;
+}
+
+/* In an inverted row the expected time turns back, so it still stands out. */
+.row[data-inverted='true'] .followingExpected {
+  background: var(--v4-lit);
+  color: var(--v4-ink);
+}
+
+/* The line runs to the right edge; halt boxes and a changed platform close it off there. */
+.followingLine {
+  composes: field;
+  left: 344px;
+  top: 0;
+  width: 861px;
+  height: 38px;
+  gap: 12px;
+}
+
+.followingLine > :not(:first-child) {
+  flex: none;
+}
+
+.followingPictograms {
+  display: flex;
+  gap: 4px;
+  font-size: 32px;
+  line-height: 1;
+}
+
+/* The track switch and the split stand in the line at cap height, like a letter. */
+.letterPictogram > svg {
+  width: auto;
+  height: 0.711em;
+  vertical-align: baseline;
+}
+
+/*
+ * The seams between modules and the gap between the module rows, laid over everything: on the
+ * hardware they are housing, so text that crosses them is interrupted.
+ */
+.seams {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(to right, transparent 0 240px, var(--v4-unlit) 240px 242px),
+    linear-gradient(to bottom, transparent 0 160px, var(--v4-unlit) 160px 191px, transparent 191px);
+}
