@@ -506,12 +506,15 @@ const followingHints = (entry: BoardEntry, notices: TrainNotices): readonly Boar
 const splitNotice = ({ splitStop }: TrainNotices): BoardMessage[] =>
   splitStop === undefined ? [] : [notice(`Zug wird in ${splitStop.name} geteilt`)];
 
-/** A cancellation in the source's own words when it has them, else in V4's. */
+/**
+ * A cancellation in the source's own words when it has them — they run among the source's
+ * messages, where the source puts them — else in V4's, in this slot.
+ */
 const statusNotices = ({ replacement, cancellation }: TrainNotices): BoardMessage[] => [
   ...(replacement ? [notice('Ersatzzug')] : []),
-  ...(cancellation === undefined
-    ? []
-    : [cancellation.message ?? notice('Zug fällt aus', 'cancellation')]),
+  ...(cancellation !== undefined && cancellation.message === undefined
+    ? [notice('Zug fällt aus', 'cancellation')]
+    : []),
 ];
 
 /** "Verspätung ca. 10 Min.", for the second part only — see `DELAY_STEP`. */

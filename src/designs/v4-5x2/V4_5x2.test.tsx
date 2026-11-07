@@ -163,13 +163,13 @@ describe('V4 5X2 design', () => {
     expect(screen.getByText('Ersatzzug +++ Heute von Gleis 4')).toBeDefined();
   });
 
-  it('words a cancellation in the source’s words when it has them, once and first', () => {
+  it('words a cancellation in the source’s words when it has them, once and where they stand', () => {
     const messages: BoardMessage[] = [
       { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
       { kind: 'cancellation', code: '80', text: 'Fällt heute aus' },
     ];
     show(ready({ current: departure({ id: 'x', status: 'cancelled', messages }), messages }));
-    expect(screen.getByText('Fällt heute aus +++ Ein Wagen fehlt')).toBeDefined();
+    expect(screen.getByText('Ein Wagen fehlt +++ Fällt heute aus')).toBeDefined();
     expect(screen.queryByText(/Zug fällt aus/)).toBeNull();
   });
 

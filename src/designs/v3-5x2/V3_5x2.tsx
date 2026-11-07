@@ -296,13 +296,15 @@ const followingHints = (entry: BoardEntry, notices: TrainNotices): readonly Boar
   ]);
 
 /**
- * A cancellation is worded in the source's own text where it gives one, and in this display's
- * words otherwise — never both.
+ * A cancellation is worded in the source's own text where it gives one — that text runs among
+ * the source's messages, where the source puts it — and in this display's words otherwise,
+ * in this slot. Never both.
  */
 const statusNotices = (notices: TrainNotices, cancelledWording: string): BoardMessage[] => {
   if (notices.replacement) return [notice('Ersatzzug')];
-  if (notices.cancellation === undefined) return [];
-  return [notices.cancellation.message ?? notice(cancelledWording, 'cancellation')];
+  return notices.cancellation !== undefined && notices.cancellation.message === undefined
+    ? [notice(cancelledWording, 'cancellation')]
+    : [];
 };
 
 /**

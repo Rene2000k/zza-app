@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { V3_5x2 } from './V3_5x2';
 import type { DepartureEntry, EntryTime, TerminatingArrivalEntry } from '@/domain/boardEntry';
+import type { BoardMessage } from '@/domain/message';
 import type { ReadyBoard, ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
 const at = (minutes: number, delay = 0): EntryTime => {
@@ -363,18 +364,29 @@ describe('V3 5X2 design', () => {
     expect(line.closest('[data-inverted]')?.getAttribute('data-inverted')).toBe('true');
   });
 
-  it('words a cancellation in the source’s own text where the source gives one', () => {
+  it('words a cancellation in the source’s own text, where the source puts it', () => {
+    const messages: BoardMessage[] = [
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+      { kind: 'cancellation', code: '80', text: 'Fällt heute aus' },
+    ];
+    show(ready({ current: departure({ id: 'x', status: 'cancelled', messages }), messages }));
+    expect(screen.getByText('Ein Wagen fehlt +++ Fällt heute aus')).toBeDefined();
+    expect(screen.queryByText(/Zug fällt aus/)).toBeNull();
+  });
+
+  it('words a following train’s cancellation in the source’s text, where the source puts it', () => {
+    const messages: BoardMessage[] = [
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+      { kind: 'cancellation', code: '80', text: 'Fällt heute aus' },
+    ];
     show(
       ready({
-        current: departure({
-          id: 'x',
-          status: 'cancelled',
-          messages: [{ kind: 'cancellation', code: '80', text: 'Fällt heute aus' }],
-        }),
+        current: departure({ id: 'x' }),
+        following: [departure({ id: 'y', time: at(20), status: 'cancelled', messages })],
       }),
     );
-    expect(screen.getByText('Fällt heute aus')).toBeDefined();
-    expect(screen.queryByText(/Zug fällt aus/)).toBeNull();
+    expect(screen.getByText('Ein Wagen fehlt +++ Fällt heute aus')).toBeDefined();
+    expect(screen.queryByText(/^Fällt aus/)).toBeNull();
   });
 
   it('words a cancellation itself where the source gives no text', () => {
