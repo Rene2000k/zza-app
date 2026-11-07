@@ -52,7 +52,10 @@ export const V3_5x2 = ({ board }: V3_5x2Props) => {
       {current === undefined || mainNotices === undefined ? null : (
         <MainTrain entry={current} notices={mainNotices} />
       )}
-      <RunningLine className={styles.mainHint} messages={mainHints(board, mainNotices)} />
+      <RunningLine
+        className={styles.mainRunningLine}
+        messages={mainRunningLine(board, mainNotices)}
+      />
       <div className={styles.platform}>{platform}</div>
 
       {current === undefined || secondPart === undefined ? (
@@ -132,7 +135,7 @@ const SecondPart = ({
   return (
     <div className={styles.secondPart}>
       <MainTrain entry={entry} notices={notices} />
-      <RunningLine className={styles.mainHint} messages={trainHints(entry, notices)} />
+      <RunningLine className={styles.mainRunningLine} messages={trainRunningLine(entry, notices)} />
     </div>
   );
 };
@@ -156,8 +159,8 @@ const FollowingTrain = ({
       <FittedText>{headline(entry)}</FittedText>
     </div>
     <RunningLine
-      className={styles.followingHint}
-      messages={followingHints(entry, trainNotices(entry, { platform }))}
+      className={styles.followingRunningLine}
+      messages={followingRunningLine(entry, trainNotices(entry, { platform }))}
     />
   </div>
 );
@@ -234,7 +237,7 @@ const viaText = (entry: BoardEntry): string =>
  * The main train's running line. It is also the only place left for a notice about the data
  * itself, which takes the line when no train text runs there.
  */
-const mainHints = (
+const mainRunningLine = (
   board: ZzaBoardViewModel,
   notices: TrainNotices | undefined,
 ): readonly BoardMessage[] => {
@@ -242,15 +245,16 @@ const mainHints = (
   if (board.state === 'unavailable') return [notice('Derzeit keine Zugdaten')];
 
   const { current } = board;
-  const hints = current === undefined || notices === undefined ? [] : trainHints(current, notices);
-  return hints.length === 0 && board.stale ? [notice('Daten nicht aktuell')] : hints;
+  const running =
+    current === undefined || notices === undefined ? [] : trainRunningLine(current, notices);
+  return running.length === 0 && board.stale ? [notice('Daten nicht aktuell')] : running;
 };
 
 /**
  * What runs above a train in the upper layout: the main train's, or that of the second part
  * of a coupled one, which says the same about itself.
  */
-const trainHints = (entry: BoardEntry, notices: TrainNotices): readonly BoardMessage[] =>
+const trainRunningLine = (entry: BoardEntry, notices: TrainNotices): readonly BoardMessage[] =>
   uniqueMessages([
     ...statusNotices(notices, 'Zug fällt aus'),
     ...(entry.kind === 'terminatingArrival' ? [notice('Fahrt endet hier')] : []),
@@ -266,7 +270,7 @@ const splitNotice = ({ splitStop }: TrainNotices): BoardMessage[] =>
   splitStop === undefined ? [] : [notice(`Zug wird in ${splitStop.name} geteilt`)];
 
 /** A train that changed away leads the following rows, and its line says so first. */
-const followingHints = (entry: BoardEntry, notices: TrainNotices): readonly BoardMessage[] =>
+const followingRunningLine = (entry: BoardEntry, notices: TrainNotices): readonly BoardMessage[] =>
   uniqueMessages([
     ...platformChange(notices),
     ...statusNotices(notices, 'Fällt aus'),
@@ -329,7 +333,7 @@ const routeText = (change: RouteChange, destinationName: string): string => {
 
 const stopNames = (change: RouteChange): string => change.stops.map((stop) => stop.name).join(', ');
 
-/** A quality notice is picked by its subject, every other message by its kind. */
+/** A quality message is picked by its subject, every other message by its kind. */
 const shown = (messages: readonly BoardMessage[]): BoardMessage[] =>
   messages.filter((message) =>
     message.kind === 'qualityNotice'

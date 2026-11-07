@@ -149,7 +149,7 @@ const Row = ({
   const partner = firstPart ? next : secondPart ? previous : undefined;
   // A station-wide board stands at no platform.
   const notices = trainNotices(entry, { coupledPart: partner });
-  const hints = rowHints(notices, entry.destination.name);
+  const worded = rowNotices(notices, entry.destination.name);
   const service = serviceClass(entry.train);
 
   return (
@@ -174,10 +174,10 @@ const Row = ({
           </span>
         </FittedText>
       </div>
-      {hints.length > 0 ? (
+      {worded.length > 0 ? (
         <div className={styles.notice} data-inverted="true">
           <Marquee speed={RUNNING_SPEED} closing={RUNNING_SEPARATOR.trimEnd()} gap=" ">
-            {hints.map((message) => message.text).join(RUNNING_SEPARATOR)}
+            {worded.map((message) => message.text).join(RUNNING_SEPARATOR)}
           </Marquee>
         </div>
       ) : (
@@ -279,7 +279,7 @@ const departureDot = (entry: DepartureEntry, now: Date): 'hollow' | 'filled' | u
  * expected-time box and a changed platform its inverted field, so neither is worded; the other
  * notices of a single train are left to the platform displays.
  */
-const rowHints = (notices: TrainNotices, destinationName: string): readonly BoardMessage[] => [
+const rowNotices = (notices: TrainNotices, destinationName: string): readonly BoardMessage[] => [
   ...(notices.replacement ? [notice('Ersatzzug')] : []),
   // A cancellation the source already words is not announced a second time.
   ...(notices.cancellation === undefined

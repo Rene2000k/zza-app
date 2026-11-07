@@ -83,8 +83,8 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
           <div className={styles.panel}>{panel ?? ''}</div>
 
           <div className={styles.row}>
-            <span className={blinkVisible ? styles.hint : styles.hintHidden}>
-              {hintFor(current, context) ?? ''}
+            <span className={blinkVisible ? styles.notice : styles.noticeHidden}>
+              {noticeFor(current, context) ?? ''}
             </span>
             <span className={styles.formation}>
               <TrainFormationDisplay formation={current.formation} />
@@ -102,7 +102,7 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
             </span>
             <span>{trainLabel(entry.train)}</span>
             <span className={styles.followingRoute}>{routeText(entry)}</span>
-            <span>{hintFor(entry, context) ?? ''}</span>
+            <span>{noticeFor(entry, context) ?? ''}</span>
           </li>
         ))}
       </ul>
@@ -125,7 +125,7 @@ const routeText = (entry: BoardEntry): string =>
  * The wording is this design's own, shouted in capitals so nobody mistakes it for a replica.
  * A cancellation outranks a platform change, which outranks a train ending here.
  */
-const hintFor = (entry: BoardEntry, context: NoticeContext): string | undefined => {
+const noticeFor = (entry: BoardEntry, context: NoticeContext): string | undefined => {
   const notices = trainNotices(entry, context);
   if (notices.cancellation !== undefined) return 'FÄLLT AUS';
   if (notices.movedTo !== undefined) return `GLEIS ${notices.movedTo}`;
