@@ -7,13 +7,14 @@ import {
 } from '@/components/zza';
 import { headlineStation } from '@/domain/boardEntry';
 import { displayableMessages } from '@/domain/message';
-import { isSamePlatform } from '@/domain/station';
 import { trainLabel } from '@/domain/train';
+import { trainNotices } from '@/domain/trainNotices';
 import { selectViaStops } from '@/domain/via';
 import { useBlink } from '@/hooks/useBlink';
 import { useRotation } from '@/hooks/useRotation';
 import styles from './debug.module.css';
 import type { BoardEntry } from '@/domain/boardEntry';
+import type { NoticeContext, TrainNotices } from '@/domain/trainNotices';
 import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
 export interface DebugDesignProps {
@@ -36,7 +37,8 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
 
   // Hooks run in the same order whatever the board's state is, so they come first.
   const blinkVisible = useBlink(700);
-  const panel = useRotation(current === undefined ? EMPTY : panelsFor(current), 3_000);
+  const context = noticeContext(ready?.platform);
+  const panel = useRotation(current === undefined ? EMPTY : panelsFor(current, context), 3_000);
 
   if (board.state === 'loading') {
     return (
@@ -82,7 +84,7 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
 
           <div className={styles.row}>
             <span className={blinkVisible ? styles.hint : styles.hintHidden}>
-              {hintFor(current, ready.platform) ?? ''}
+              {hintFor(current, context) ?? ''}
             </span>
             <span className={styles.formation}>
               <TrainFormationDisplay formation={current.formation} />
@@ -98,7 +100,7 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
             <span className={styles.followingDelay}>{formatDelay(entry.time) ?? ''}</span>
             <span>{trainLabel(entry.train)}</span>
             <span className={styles.followingRoute}>{routeText(entry)}</span>
-            <span>{hintFor(entry, ready.platform) ?? ''}</span>
+            <span>{hintFor(entry, context) ?? ''}</span>
           </li>
         ))}
       </ul>
@@ -112,6 +114,9 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
 
 const EMPTY: readonly string[] = [];
 
+const noticeContext = (platform: string | undefined): NoticeContext =>
+  platform === undefined ? {} : { platform };
+
 /** Where the train goes, or where it came from when it ends here. */
 const routeText = (entry: BoardEntry): string =>
   entry.kind === 'terminatingArrival'
@@ -122,18 +127,16 @@ const routeText = (entry: BoardEntry): string =>
  * The wording is this design's own, shouted in capitals so nobody mistakes it for a replica.
  * A cancellation outranks a platform change, which outranks a train ending here.
  */
-const hintFor = (entry: BoardEntry, platform: string | undefined): string | undefined => {
-  if (entry.status === 'cancelled') return 'FÄLLT AUS';
-  const actual = entry.platform.actual;
-  if (entry.platform.changed && actual !== undefined && !isSamePlatform(actual, platform)) {
-    return `GLEIS ${actual}`;
-  }
+const hintFor = (entry: BoardEntry, context: NoticeContext): string | undefined => {
+  const notices = trainNotices(entry, context);
+  if (notices.cancellation !== undefined) return 'FÄLLT AUS';
+  if (notices.movedTo !== undefined) return `GLEIS ${notices.movedTo}`;
   if (entry.kind === 'terminatingArrival') return 'ENDET';
   return undefined;
 };
 
 /** What the rotating panel cycles through: the via stops, the route changes, then each message. */
-const panelsFor = (entry: BoardEntry): readonly string[] => {
+const panelsFor = (entry: BoardEntry, context: NoticeContext): readonly string[] => {
   const viaStops =
     entry.kind === 'departure' && entry.via.length > 0
       ? [
@@ -143,7 +146,7 @@ const panelsFor = (entry: BoardEntry): readonly string[] => {
         ]
       : [];
   const texts = displayableMessages(entry.messages).map((message) => message.text ?? '');
-  return [...viaStops, ...routeTexts(entry), ...texts];
+  return [...viaStops, ...routeTexts(entry, trainNotices(entry, context)), ...texts];
 };
 
 /**
@@ -153,12 +156,10 @@ const panelsFor = (entry: BoardEntry): readonly string[] => {
  * (ADR-0012), so two designs can say the same thing in two ways without the provider knowing
  * either of them.
  */
-const routeTexts = (entry: BoardEntry): readonly string[] => {
-  if (entry.kind !== 'departure') return [];
-  return entry.routeChanges.map((change) => {
+const routeTexts = (entry: BoardEntry, notices: TrainNotices): readonly string[] =>
+  notices.routeChanges.map((change) => {
     const stops = change.stops.map((stop) => stop.name).join(' / ');
     if (change.kind === 'skippedStops') return `OHNE: ${stops}`;
     if (change.kind === 'additionalStops') return `EXTRA: ${stops}`;
-    return `NUR BIS ${entry.destination.name}`;
+    return `NUR BIS ${headlineStation(entry).name}`;
   });
-};
