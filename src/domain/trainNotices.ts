@@ -42,9 +42,9 @@ export interface TrainNotices {
 /** Where the train is shown. */
 export interface NoticeContext {
   /** The platform the display stands at; absent for a station-wide display. */
-  readonly platform?: string;
+  readonly platform?: string | undefined;
   /** The part the train runs coupled with on this display, if any. */
-  readonly coupledPart?: BoardEntry;
+  readonly coupledPart?: BoardEntry | undefined;
 }
 
 const cancellationOf = (entry: BoardEntry): NonNullable<TrainNotices['cancellation']> => {

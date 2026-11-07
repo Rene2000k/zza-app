@@ -17,7 +17,7 @@ import styles from './v3-5x2.module.css';
 import type { BoardEntry } from '@/domain/boardEntry';
 import type { BoardMessage, MessageKind, PlainMessageKind } from '@/domain/message';
 import type { RouteChange } from '@/domain/routeChange';
-import type { NoticeContext, TrainNotices } from '@/domain/trainNotices';
+import type { TrainNotices } from '@/domain/trainNotices';
 import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
 export interface V3_5x2Props {
@@ -42,7 +42,9 @@ export const V3_5x2 = ({ board }: V3_5x2Props) => {
   const secondPart = ready?.secondPart;
   const platform = ready?.platform ?? current?.platform.actual ?? current?.platform.planned;
   const mainNotices =
-    current === undefined ? undefined : trainNotices(current, context(ready?.platform, secondPart));
+    current === undefined
+      ? undefined
+      : trainNotices(current, { platform: ready?.platform, coupledPart: secondPart });
 
   return (
     <div className={styles.display}>
@@ -88,15 +90,6 @@ const DELAY_STEP = 5;
  */
 const SHOWN_KINDS: ReadonlySet<MessageKind> = new Set<MessageKind>(['cancellation']);
 
-/** Where a train is shown, in the shape the notice record asks for. */
-const context = (
-  platform: string | undefined,
-  coupledPart: BoardEntry | undefined,
-): NoticeContext => ({
-  ...(platform === undefined ? {} : { platform }),
-  ...(coupledPart === undefined ? {} : { coupledPart }),
-});
-
 interface TrainProps {
   readonly entry: BoardEntry;
   readonly notices: TrainNotices;
@@ -134,7 +127,7 @@ const SecondPart = ({
   readonly platform: string | undefined;
   readonly partner: BoardEntry;
 }) => {
-  const notices = trainNotices(entry, context(platform, partner));
+  const notices = trainNotices(entry, { platform, coupledPart: partner });
   return (
     <div className={styles.secondPart}>
       <MainTrain entry={entry} notices={notices} />
@@ -166,7 +159,7 @@ const FollowingTrain = ({
     </div>
     <RunningLine
       className={styles.followingHint}
-      messages={followingHints(entry, trainNotices(entry, context(platform, undefined)))}
+      messages={followingHints(entry, trainNotices(entry, { platform }))}
     />
   </div>
 );

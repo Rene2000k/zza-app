@@ -148,7 +148,7 @@ const Row = ({
   const dot = secondPart || now === undefined ? undefined : departureDot(entry, now);
   const partner = firstPart ? next : secondPart ? previous : undefined;
   // A station-wide board stands at no platform.
-  const notices = trainNotices(entry, partner === undefined ? {} : { coupledPart: partner });
+  const notices = trainNotices(entry, { coupledPart: partner });
   const hints = rowHints(notices, entry.destination.name);
   const service = serviceClass(entry.train);
 

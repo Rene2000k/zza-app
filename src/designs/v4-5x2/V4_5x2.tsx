@@ -20,7 +20,7 @@ import type { BoardEntry, DepartureEntry, TerminatingArrivalEntry } from '@/doma
 import type { BoardMessage, MessageKind, PlainMessageKind } from '@/domain/message';
 import type { RouteChange } from '@/domain/routeChange';
 import type { RouteStop } from '@/domain/station';
-import type { NoticeContext, TrainNotices } from '@/domain/trainNotices';
+import type { TrainNotices } from '@/domain/trainNotices';
 import type { ReadyBoard, ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 import type { ReactNode } from 'react';
 
@@ -103,7 +103,7 @@ const Departure = ({
   const notices =
     entry === undefined
       ? undefined
-      : trainNotices(entry, noticeContext(ready?.platform, secondPart));
+      : trainNotices(entry, { platform: ready?.platform, coupledPart: secondPart });
   const hints =
     entry === undefined || notices === undefined || ready === undefined
       ? []
@@ -164,7 +164,7 @@ const SecondPart = ({
   readonly partner: DepartureEntry;
   readonly platform: string | undefined;
 }) => {
-  const notices = trainNotices(entry, noticeContext(platform, partner));
+  const notices = trainNotices(entry, { platform, coupledPart: partner });
   const hints = [
     ...trainHints(entry, notices, entry.messages, { split: false }),
     ...delayNotice(entry),
@@ -206,7 +206,7 @@ const Arrival = ({
   const hints =
     ready === undefined
       ? []
-      : arrivalHints(trainNotices(entry, noticeContext(ready.platform, undefined)), ready.messages);
+      : arrivalHints(trainNotices(entry, { platform: ready.platform }), ready.messages);
   const banner = hints.length === 0 ? dataNotices(board) : hints;
 
   return (
@@ -259,7 +259,7 @@ const FollowingTrain = ({
   readonly entry: BoardEntry;
   readonly platform: string | undefined;
 }) => {
-  const notices = trainNotices(entry, noticeContext(platform, undefined));
+  const notices = trainNotices(entry, { platform });
   const cancelled = notices.cancellation !== undefined;
   const { movedTo } = notices;
   return (
@@ -449,14 +449,6 @@ const followingText = (entry: BoardEntry, notices: TrainNotices): string => {
   const hints = followingHints(entry, notices).map((message) => message.text ?? '');
   return [trainLabel(entry.train), ...route, ...hints].join(ROW_GAP);
 };
-
-const noticeContext = (
-  platform: string | undefined,
-  coupledPart: BoardEntry | undefined,
-): NoticeContext => ({
-  ...(platform === undefined ? {} : { platform }),
-  ...(coupledPart === undefined ? {} : { coupledPart }),
-});
 
 /** Notices about the data itself; the original shows nothing of the kind. */
 const dataNotices = (board: ZzaBoardViewModel): readonly BoardMessage[] => {

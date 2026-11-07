@@ -37,7 +37,7 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
 
   // Hooks run in the same order whatever the board's state is, so they come first.
   const blinkVisible = useBlink(700);
-  const context = noticeContext(ready?.platform);
+  const context: NoticeContext = { platform: ready?.platform };
   const panel = useRotation(current === undefined ? EMPTY : panelsFor(current, context), 3_000);
 
   if (board.state === 'loading') {
@@ -113,10 +113,6 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
 };
 
 const EMPTY: readonly string[] = [];
-
-const noticeContext = (platform: string | undefined): NoticeContext =>
-  platform === undefined ? {} : { platform };
-
 /** Where the train goes, or where it came from when it ends here. */
 const routeText = (entry: BoardEntry): string =>
   entry.kind === 'terminatingArrival'
