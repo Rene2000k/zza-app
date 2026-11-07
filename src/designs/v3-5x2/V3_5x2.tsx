@@ -11,13 +11,13 @@ import {
 } from '@/components/zza';
 import { delayMinutes, headlineStation } from '@/domain/boardEntry';
 import { splitStop } from '@/domain/coupling';
-import { displayableMessages } from '@/domain/message';
+import { displayableMessages, PLATFORM_QUALITY_TOPICS, uniqueMessages } from '@/domain/message';
 import { isSamePlatform } from '@/domain/station';
 import { trainLabel } from '@/domain/train';
 import { selectViaStops } from '@/domain/via';
 import styles from './v3-5x2.module.css';
 import type { BoardEntry } from '@/domain/boardEntry';
-import type { BoardMessage, MessageKind, PlainMessageKind, QualityTopic } from '@/domain/message';
+import type { BoardMessage, MessageKind, PlainMessageKind } from '@/domain/message';
 import type { RouteChange } from '@/domain/routeChange';
 import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
@@ -90,23 +90,6 @@ const DELAY_STEP = 5;
  * disruption reports do not run here — the display words the delay itself.
  */
 const SHOWN_KINDS: ReadonlySet<MessageKind> = new Set<MessageKind>(['cancellation']);
-
-/**
- * Which shortcomings of the train itself this display announces (ADR-0011). What a traveller
- * on the platform can still act on: where to stand, whether the bicycle comes along, whether
- * to expect a seat, whether a bus runs instead. Left out: WLAN and on-board entertainment,
- * reservations, and the source's own "sonstige Qualitätsmängel", which says nothing useful
- * without a subject.
- */
-const SHOWN_TOPICS: ReadonlySet<QualityTopic> = new Set<QualityTopic>([
-  'coachOrder',
-  'missingCoaches',
-  'bicycle',
-  'catering',
-  'accessibility',
-  'occupancy',
-  'busReplacement',
-]);
 
 const MainTrain = ({ entry }: { readonly entry: BoardEntry }) => (
   <>
@@ -245,7 +228,7 @@ const trainHints = (
   platform: string | undefined,
   partner: BoardEntry | undefined,
 ): readonly BoardMessage[] =>
-  unique([
+  uniqueMessages([
     ...statusNotices(entry, messages, 'Zug fällt aus'),
     ...(entry.kind === 'terminatingArrival' ? [notice('Fahrt endet hier')] : []),
     ...splitNotice(entry, partner),
@@ -269,7 +252,7 @@ const splitNotice = (entry: BoardEntry, partner: BoardEntry | undefined): BoardM
 
 /** A train that changed away leads the following rows, and its line says so first. */
 const followingHints = (entry: BoardEntry, platform: string | undefined): readonly BoardMessage[] =>
-  unique([
+  uniqueMessages([
     ...platformChange(entry, platform),
     ...statusNotices(entry, entry.messages, 'Fällt aus'),
     ...(entry.kind === 'terminatingArrival' ? [notice('Zug endet hier')] : []),
@@ -339,19 +322,8 @@ const stopNames = (change: RouteChange): string => change.stops.map((stop) => st
 const shown = (messages: readonly BoardMessage[]): BoardMessage[] =>
   messages.filter((message) =>
     message.kind === 'qualityNotice'
-      ? SHOWN_TOPICS.has(message.topic)
+      ? PLATFORM_QUALITY_TOPICS.has(message.topic)
       : SHOWN_KINDS.has(message.kind),
   );
 
 const notice = (text: string, kind: PlainMessageKind = 'info'): BoardMessage => ({ kind, text });
-
-/** The same text often arrives from the stop and from the movement; a line says it once. */
-const unique = (messages: readonly BoardMessage[]): BoardMessage[] => {
-  const seen = new Set<string>();
-  return displayableMessages(messages).filter((message) => {
-    const text = message.text ?? '';
-    if (seen.has(text)) return false;
-    seen.add(text);
-    return true;
-  });
-};
