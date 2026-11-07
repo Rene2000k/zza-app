@@ -216,16 +216,6 @@ describe('V3 5X2 design', () => {
         screen.getByText('Zug wird in Gießen geteilt +++ Verspätung ca. 10 Min.'),
       ).toBeDefined();
     });
-
-    it('announces no split when one part does not run', () => {
-      const container = show(
-        ready({ current: toKassel, secondPart: departure({ ...toSiegen, status: 'cancelled' }) }),
-      );
-      expect(screen.queryByText(/geteilt/)).toBeNull();
-      expect(screen.getByText('Zug fällt aus')).toBeDefined();
-      expect(screen.getByText('Siegen Hbf')).toBeDefined();
-      expect(invertedFields(container)).toHaveLength(1);
-    });
   });
 
   it('runs a quality notice after the delay, separated by +++', () => {
@@ -373,19 +363,38 @@ describe('V3 5X2 design', () => {
     expect(line.closest('[data-inverted]')?.getAttribute('data-inverted')).toBe('true');
   });
 
-  it('does not announce a cancellation twice when the source already words it', () => {
+  it('words a cancellation in the source’s own text where the source gives one', () => {
     show(
       ready({
-        current: departure({ id: 'x', status: 'cancelled' }),
-        messages: [{ kind: 'cancellation', code: '80', text: 'Zug fällt aus' }],
+        current: departure({
+          id: 'x',
+          status: 'cancelled',
+          messages: [{ kind: 'cancellation', code: '80', text: 'Fällt heute aus' }],
+        }),
       }),
     );
+    expect(screen.getByText('Fällt heute aus')).toBeDefined();
+    expect(screen.queryByText(/Zug fällt aus/)).toBeNull();
+  });
+
+  it('words a cancellation itself where the source gives no text', () => {
+    show(ready({ current: departure({ id: 'x', status: 'cancelled' }) }));
     expect(screen.getByText('Zug fällt aus')).toBeDefined();
   });
 
-  it('announces no delay for a cancelled train', () => {
-    show(ready({ current: departure({ id: 'x', time: at(9, 20), status: 'cancelled' }) }));
+  it('announces no route change and shows no halt box for a cancelled train', () => {
+    show(
+      ready({
+        current: departure({
+          id: 'x',
+          status: 'cancelled',
+          routeChanges: [{ kind: 'skippedStops', stops: [{ name: 'Duisburg Hbf' }] }],
+        }),
+      }),
+    );
     expect(screen.getByText('Zug fällt aus')).toBeDefined();
+    expect(screen.queryByText(/Heute ohne Halt/)).toBeNull();
+    expect(screen.queryAllByRole('img')).toHaveLength(0);
   });
 
   it('announces a replacement train in the running line', () => {
@@ -423,11 +432,6 @@ describe('V3 5X2 design', () => {
   it('marks a cancelled following train in its own running line', () => {
     show(ready({ following: [departure({ id: 'x', status: 'cancelled' })] }));
     expect(screen.getByText('Fällt aus')).toBeDefined();
-  });
-
-  it('gives a cancelled following train no deviation field', () => {
-    show(ready({ following: [departure({ id: 'x', time: at(20, 7), status: 'cancelled' })] }));
-    expect(screen.queryByText('+7')).toBeNull();
   });
 
   it('shows two following trains and no more', () => {

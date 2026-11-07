@@ -6,19 +6,18 @@ import {
   Ticker,
   TrainFormationDisplay,
   formatClockTime,
-  formatDelay,
   haltChangePictograms,
 } from '@/components/zza';
-import { delayMinutes, headlineStation } from '@/domain/boardEntry';
-import { splitStop } from '@/domain/coupling';
-import { displayableMessages, PLATFORM_QUALITY_TOPICS, uniqueMessages } from '@/domain/message';
-import { isSamePlatform } from '@/domain/station';
+import { announcedDelayMinutes, headlineStation } from '@/domain/boardEntry';
+import { PLATFORM_QUALITY_TOPICS, uniqueMessages } from '@/domain/message';
 import { trainLabel } from '@/domain/train';
+import { trainNotices } from '@/domain/trainNotices';
 import { selectViaStops } from '@/domain/via';
 import styles from './v3-5x2.module.css';
 import type { BoardEntry } from '@/domain/boardEntry';
 import type { BoardMessage, MessageKind, PlainMessageKind } from '@/domain/message';
 import type { RouteChange } from '@/domain/routeChange';
+import type { NoticeContext, TrainNotices } from '@/domain/trainNotices';
 import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
 export interface V3_5x2Props {
@@ -42,11 +41,15 @@ export const V3_5x2 = ({ board }: V3_5x2Props) => {
   const current = ready?.current;
   const secondPart = ready?.secondPart;
   const platform = ready?.platform ?? current?.platform.actual ?? current?.platform.planned;
+  const mainNotices =
+    current === undefined ? undefined : trainNotices(current, context(ready?.platform, secondPart));
 
   return (
     <div className={styles.display}>
-      {current === undefined ? null : <MainTrain entry={current} />}
-      <RunningLine className={styles.mainHint} messages={mainHints(board)} />
+      {current === undefined || mainNotices === undefined ? null : (
+        <MainTrain entry={current} notices={mainNotices} />
+      )}
+      <RunningLine className={styles.mainHint} messages={mainHints(board, mainNotices)} />
       <div className={styles.platform}>{platform}</div>
 
       {current === undefined || secondPart === undefined ? (
@@ -57,13 +60,7 @@ export const V3_5x2 = ({ board }: V3_5x2Props) => {
           ))}
         </>
       ) : (
-        <div className={styles.secondPart}>
-          <MainTrain entry={secondPart} />
-          <RunningLine
-            className={styles.mainHint}
-            messages={trainHints(secondPart, secondPart.messages, ready?.platform, current)}
-          />
-        </div>
+        <SecondPart entry={secondPart} platform={ready?.platform} partner={current} />
       )}
 
       <div className={styles.seams} aria-hidden="true" />
@@ -91,12 +88,26 @@ const DELAY_STEP = 5;
  */
 const SHOWN_KINDS: ReadonlySet<MessageKind> = new Set<MessageKind>(['cancellation']);
 
-const MainTrain = ({ entry }: { readonly entry: BoardEntry }) => (
+/** Where a train is shown, in the shape the notice record asks for. */
+const context = (
+  platform: string | undefined,
+  coupledPart: BoardEntry | undefined,
+): NoticeContext => ({
+  ...(platform === undefined ? {} : { platform }),
+  ...(coupledPart === undefined ? {} : { coupledPart }),
+});
+
+interface TrainProps {
+  readonly entry: BoardEntry;
+  readonly notices: TrainNotices;
+}
+
+const MainTrain = ({ entry, notices }: TrainProps) => (
   <>
     <div className={styles.time}>{formatClockTime(entry.time.planned)}</div>
     <div className={styles.train}>
       <FittedText>{trainLabel(entry.train)}</FittedText>
-      <HaltPictograms entry={entry} />
+      <HaltPictograms entry={entry} notices={notices} />
     </div>
     {/* The real display leaves the area empty without a coach sequence, strip included. */}
     {entry.formation === undefined ? null : (
@@ -112,6 +123,28 @@ const MainTrain = ({ entry }: { readonly entry: BoardEntry }) => (
     </div>
   </>
 );
+
+/** The second part of a coupled train, which says the same about itself as the first. */
+const SecondPart = ({
+  entry,
+  platform,
+  partner,
+}: {
+  readonly entry: BoardEntry;
+  readonly platform: string | undefined;
+  readonly partner: BoardEntry;
+}) => {
+  const notices = trainNotices(entry, context(platform, partner));
+  return (
+    <div className={styles.secondPart}>
+      <MainTrain entry={entry} notices={notices} />
+      <RunningLine
+        className={styles.mainHint}
+        messages={trainHints(entry, notices, entry.messages)}
+      />
+    </div>
+  );
+};
 
 const FollowingTrain = ({
   entry,
@@ -131,7 +164,10 @@ const FollowingTrain = ({
     <div className={styles.followingDestination}>
       <FittedText>{headline(entry)}</FittedText>
     </div>
-    <RunningLine className={styles.followingHint} messages={followingHints(entry, platform)} />
+    <RunningLine
+      className={styles.followingHint}
+      messages={followingHints(entry, trainNotices(entry, context(platform, undefined)))}
+    />
   </div>
 );
 
@@ -139,10 +175,14 @@ const FollowingTrain = ({
  * H+ and H− beside the main train's name (ADR-0013). No photograph shows them on this
  * generation, so they take the place V4 gives them: right of the train, as tall as its band,
  * which squeezes a long train name rather than covering it. The following rows have no room
- * and carry the change in their running line only.
+ * and carry the change in their running line only. The boxes follow the notice record's route
+ * changes, so a cancelled train carries none.
  */
-const HaltPictograms = ({ entry }: { readonly entry: BoardEntry }) => {
-  const pictograms = haltChangePictograms(entry);
+const HaltPictograms = ({ entry, notices }: TrainProps) => {
+  const pictograms =
+    entry.kind === 'departure'
+      ? haltChangePictograms({ ...entry, routeChanges: notices.routeChanges })
+      : [];
   if (pictograms.length === 0) return null;
   return (
     <div className={styles.pictograms}>
@@ -180,7 +220,8 @@ const RunningLine = ({
  * has none: its running line says it does not run, and a delay beside that contradicts it.
  */
 const DeviationField = ({ className, entry }: FieldProps & { readonly entry: BoardEntry }) => {
-  const deviation = entry.status === 'cancelled' ? undefined : formatDelay(entry.time);
+  const minutes = announcedDelayMinutes(entry);
+  const deviation = minutes > 0 ? `+${minutes}` : undefined;
   return (
     <div className={className} data-inverted={deviation !== undefined}>
       {deviation}
@@ -206,15 +247,18 @@ const viaText = (entry: BoardEntry): string =>
  * The main train's running line. It is also the only place left for a notice about the data
  * itself, which takes the line when no train text runs there.
  */
-const mainHints = (board: ZzaBoardViewModel): readonly BoardMessage[] => {
+const mainHints = (
+  board: ZzaBoardViewModel,
+  notices: TrainNotices | undefined,
+): readonly BoardMessage[] => {
   if (board.state === 'loading') return [];
   if (board.state === 'unavailable') return [notice('Derzeit keine Zugdaten')];
 
   const { current } = board;
   const hints =
-    current === undefined
+    current === undefined || notices === undefined
       ? []
-      : trainHints(current, board.messages, board.platform, board.secondPart);
+      : trainHints(current, notices, board.messages);
   return hints.length === 0 && board.stale ? [notice('Daten nicht aktuell')] : hints;
 };
 
@@ -224,60 +268,49 @@ const mainHints = (board: ZzaBoardViewModel): readonly BoardMessage[] => {
  */
 const trainHints = (
   entry: BoardEntry,
+  notices: TrainNotices,
   messages: readonly BoardMessage[],
-  platform: string | undefined,
-  partner: BoardEntry | undefined,
 ): readonly BoardMessage[] =>
   uniqueMessages([
-    ...statusNotices(entry, messages, 'Zug fällt aus'),
+    ...statusNotices(notices, 'Zug fällt aus'),
     ...(entry.kind === 'terminatingArrival' ? [notice('Fahrt endet hier')] : []),
-    ...splitNotice(entry, partner),
+    ...splitNotice(notices),
     ...delayNotice(entry),
-    ...routeNotices(entry),
+    ...routeNotices(entry, notices),
     ...shown(messages),
-    ...platformChange(entry, platform),
+    ...platformChange(notices),
   ]);
 
-/**
- * "Zug wird in Gießen geteilt", above both parts, as the real displays word it. Nothing is
- * said where the parts share no stop ahead to name, or where one of them does not run.
- */
-const splitNotice = (entry: BoardEntry, partner: BoardEntry | undefined): BoardMessage[] => {
-  if (partner === undefined || entry.status === 'cancelled' || partner.status === 'cancelled') {
-    return [];
-  }
-  const stop = splitStop(entry, partner);
-  return stop === undefined ? [] : [notice(`Zug wird in ${stop.name} geteilt`)];
-};
+/** "Zug wird in Gießen geteilt", above both parts, as the real displays word it. */
+const splitNotice = ({ splitStop }: TrainNotices): BoardMessage[] =>
+  splitStop === undefined ? [] : [notice(`Zug wird in ${splitStop.name} geteilt`)];
 
 /** A train that changed away leads the following rows, and its line says so first. */
-const followingHints = (entry: BoardEntry, platform: string | undefined): readonly BoardMessage[] =>
+const followingHints = (entry: BoardEntry, notices: TrainNotices): readonly BoardMessage[] =>
   uniqueMessages([
-    ...platformChange(entry, platform),
-    ...statusNotices(entry, entry.messages, 'Fällt aus'),
+    ...platformChange(notices),
+    ...statusNotices(notices, 'Fällt aus'),
     ...(entry.kind === 'terminatingArrival' ? [notice('Zug endet hier')] : []),
-    ...routeNotices(entry),
+    ...routeNotices(entry, notices),
     ...shown(entry.messages),
   ]);
 
-/** A cancellation the source already words is not announced a second time. */
-const statusNotices = (
-  entry: BoardEntry,
-  messages: readonly BoardMessage[],
-  cancelledWording: string,
-): BoardMessage[] => {
-  if (entry.status === 'replacement') return [notice('Ersatzzug')];
-  const worded = displayableMessages(messages).some((message) => message.kind === 'cancellation');
-  return entry.status === 'cancelled' && !worded ? [notice(cancelledWording, 'cancellation')] : [];
+/**
+ * A cancellation is worded in the source's own text where it gives one, and in this display's
+ * words otherwise — never both.
+ */
+const statusNotices = (notices: TrainNotices, cancelledWording: string): BoardMessage[] => {
+  if (notices.replacement) return [notice('Ersatzzug')];
+  if (notices.cancellation === undefined) return [];
+  return [notices.cancellation.message ?? notice(cancelledWording, 'cancellation')];
 };
 
 /**
  * "Verspätung ca. 10 Min.", rounded down to five minutes — which leaves nothing to say below
- * five. A cancelled train has no delay worth announcing.
+ * five.
  */
 const delayNotice = (entry: BoardEntry): BoardMessage[] => {
-  if (entry.status === 'cancelled') return [];
-  const rounded = Math.floor(delayMinutes(entry.time) / DELAY_STEP) * DELAY_STEP;
+  const rounded = Math.floor(announcedDelayMinutes(entry) / DELAY_STEP) * DELAY_STEP;
   return rounded > 0 ? [notice(`Verspätung ca. ${rounded} Min.`)] : [];
 };
 
@@ -287,14 +320,9 @@ const delayNotice = (entry: BoardEntry): BoardMessage[] => {
  * the main train carries this only on a station-wide display. The platform field keeps
  * showing the platform the display stands at.
  */
-const platformChange = (entry: BoardEntry, platform: string | undefined): BoardMessage[] => {
-  const { actual, changed } = entry.platform;
-  return changed && actual !== undefined && !isSamePlatform(actual, platform)
-    ? [notice(`Heute von Gleis ${actual}`)]
-    : [];
-};
+const platformChange = ({ movedTo }: TrainNotices): BoardMessage[] =>
+  movedTo === undefined ? [] : [notice(`Heute von Gleis ${movedTo}`)];
 
-/** A quality notice is picked by its subject, every other message by its kind. */
 /**
  * What the display says about a route that differs from the timetable (ADR-0012).
  *
@@ -304,9 +332,9 @@ const platformChange = (entry: BoardEntry, platform: string | undefined): BoardM
  * "Heute nur bis" takes the destination from the entry, which already names where the train
  * really ends.
  */
-const routeNotices = (entry: BoardEntry): BoardMessage[] => {
+const routeNotices = (entry: BoardEntry, { routeChanges }: TrainNotices): BoardMessage[] => {
   if (entry.kind !== 'departure') return [];
-  return entry.routeChanges.map((change) => notice(routeText(change, entry.destination.name)));
+  return routeChanges.map((change) => notice(routeText(change, entry.destination.name)));
 };
 
 const routeText = (change: RouteChange, destinationName: string): string => {
@@ -319,6 +347,7 @@ const routeText = (change: RouteChange, destinationName: string): string => {
 
 const stopNames = (change: RouteChange): string => change.stops.map((stop) => stop.name).join(', ');
 
+/** A quality notice is picked by its subject, every other message by its kind. */
 const shown = (messages: readonly BoardMessage[]): BoardMessage[] =>
   messages.filter((message) =>
     message.kind === 'qualityNotice'
