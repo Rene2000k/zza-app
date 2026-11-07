@@ -100,7 +100,7 @@ const MainTrain = ({ entry, notices }: TrainProps) => (
     <div className={styles.time}>{formatClockTime(entry.time.planned)}</div>
     <div className={styles.train}>
       <FittedText>{trainLabel(entry.train)}</FittedText>
-      <HaltPictograms entry={entry} notices={notices} />
+      <HaltPictograms notices={notices} />
     </div>
     {/* The real display leaves the area empty without a coach sequence, strip included. */}
     {entry.formation === undefined ? null : (
@@ -171,11 +171,8 @@ const FollowingTrain = ({
  * and carry the change in their running line only. The boxes follow the notice record's route
  * changes, so a cancelled train carries none.
  */
-const HaltPictograms = ({ entry, notices }: TrainProps) => {
-  const pictograms =
-    entry.kind === 'departure'
-      ? haltChangePictograms({ ...entry, routeChanges: notices.routeChanges })
-      : [];
+const HaltPictograms = ({ notices }: { readonly notices: TrainNotices }) => {
+  const pictograms = haltChangePictograms(notices.routeChanges);
   if (pictograms.length === 0) return null;
   return (
     <div className={styles.pictograms}>

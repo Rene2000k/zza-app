@@ -120,7 +120,7 @@ const Departure = ({
           <div className={styles.train}>
             <FittedText>{trainLabel(entry.train)}</FittedText>
           </div>
-          <HaltPictograms className={styles.pictograms} entry={entry} notices={notices} />
+          <HaltPictograms className={styles.pictograms} notices={notices} />
           <div className={viaHasBand ? styles.viaTwoLines : styles.via}>
             <ViaStops entry={entry} split={notices.splitStop} twoLines={viaHasBand} />
           </div>
@@ -274,7 +274,7 @@ const FollowingTrain = ({
         <Marquee speed={RUNNING_SPEED} closing={RUNNING_SEPARATOR.trimEnd()} gap=" ">
           {followingText(entry, notices)}
         </Marquee>
-        <HaltPictograms className={styles.followingPictograms} entry={entry} notices={notices} />
+        <HaltPictograms className={styles.followingPictograms} notices={notices} />
         {movedTo === undefined ? null : (
           <span className={styles.letterPictogram}>
             <Pictogram id="platformChange" /> Gleis {movedTo}
@@ -291,17 +291,12 @@ const FollowingTrain = ({
  */
 const HaltPictograms = ({
   className,
-  entry,
   notices,
 }: {
   readonly className: string | undefined;
-  readonly entry: BoardEntry;
   readonly notices: TrainNotices;
 }) => {
-  const pictograms =
-    entry.kind === 'departure'
-      ? haltChangePictograms({ ...entry, routeChanges: notices.routeChanges })
-      : [];
+  const pictograms = haltChangePictograms(notices.routeChanges);
   if (pictograms.length === 0) return null;
   return (
     <div className={className}>
