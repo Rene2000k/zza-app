@@ -6,10 +6,9 @@ import '@fontsource/roboto-condensed/latin-700-italic.css';
 import '@fontsource/roboto-condensed/latin-ext-700-italic.css';
 import { Fragment } from 'react';
 import { FittedText, Marquee, Pictogram, Ticker, formatClockTime } from '@/components/zza';
-import { delayMinutes } from '@/domain/boardEntry';
-import { splitStop } from '@/domain/coupling';
-import { displayableMessages } from '@/domain/message';
+import { announcedDelayMinutes } from '@/domain/boardEntry';
 import { serviceClass, trainLabel } from '@/domain/train';
+import { trainNotices } from '@/domain/trainNotices';
 import { selectViaStops } from '@/domain/via';
 import { useBlink } from '@/hooks/useBlink';
 import styles from './station-overview.module.css';
@@ -17,6 +16,7 @@ import type { BoardEntry, DepartureEntry } from '@/domain/boardEntry';
 import type { BoardMessage, PlainMessageKind } from '@/domain/message';
 import type { RouteChange } from '@/domain/routeChange';
 import type { RouteStop } from '@/domain/station';
+import type { TrainNotices } from '@/domain/trainNotices';
 import type { ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
 export interface StationOverviewProps {
@@ -147,7 +147,9 @@ const Row = ({
   const firstPart = isCoupled(entry, next);
   const dot = secondPart || now === undefined ? undefined : departureDot(entry, now);
   const partner = firstPart ? next : secondPart ? previous : undefined;
-  const hints = rowHints(entry);
+  // A station-wide board stands at no platform.
+  const notices = trainNotices(entry, partner === undefined ? {} : { coupledPart: partner });
+  const hints = rowHints(notices, entry.destination.name);
   const service = serviceClass(entry.train);
 
   return (
@@ -180,7 +182,7 @@ const Row = ({
         </div>
       ) : (
         <div className={styles.via}>
-          <ViaStops entry={entry} partner={partner} />
+          <ViaStops entry={entry} split={notices.splitStop} />
         </div>
       )}
       <div className={styles.destination}>
@@ -199,7 +201,7 @@ const ROW_HEIGHT = 75;
 
 /** Inverted beside the planned time from the first full minute of delay, as on V4. */
 const ExpectedTime = ({ entry }: { readonly entry: BoardEntry }) =>
-  entry.status === 'cancelled' || delayMinutes(entry.time) <= 0 ? null : (
+  announcedDelayMinutes(entry) <= 0 ? null : (
     <div className={styles.expected} data-inverted="true">
       {formatClockTime(entry.time.expected)}
     </div>
@@ -226,13 +228,13 @@ const Platform = ({ entry }: { readonly entry: BoardEntry }) => {
  */
 const ViaStops = ({
   entry,
-  partner,
+  split,
 }: {
   readonly entry: DepartureEntry;
-  readonly partner: DepartureEntry | undefined;
+  /** Where the train and its coupled part separate, if they do. */
+  readonly split: RouteStop | undefined;
 }) => {
   const stops = selectViaStops(entry.via, VIA_STOPS).stops;
-  const split = splitAt(entry, partner);
   const splitShown = stops.some((stop) => stop.name === split?.name);
   const splitMark = (
     <span className={styles.letterPictogram}>
@@ -260,12 +262,6 @@ const isDeparture = (entry: BoardEntry): entry is DepartureEntry => entry.kind =
 const isCoupled = (first: BoardEntry | undefined, second: BoardEntry | undefined): boolean =>
   first !== undefined && second !== undefined && (first.coupledWith?.includes(second.id) ?? false);
 
-/** Where two coupled parts are split — nowhere, when one of them does not run. */
-const splitAt = (entry: BoardEntry, partner: BoardEntry | undefined): RouteStop | undefined =>
-  partner === undefined || entry.status === 'cancelled' || partner.status === 'cancelled'
-    ? undefined
-    : splitStop(entry, partner);
-
 /**
  * The dot of a train about to leave — measured against the expected departure, since that is
  * when it goes. A cancelled train never will.
@@ -283,23 +279,14 @@ const departureDot = (entry: DepartureEntry, now: Date): 'hollow' | 'filled' | u
  * expected-time box and a changed platform its inverted field, so neither is worded; the other
  * notices of a single train are left to the platform displays.
  */
-const rowHints = (entry: DepartureEntry): readonly BoardMessage[] =>
-  displayableMessages([...statusNotices(entry), ...routeNotices(entry)]);
-
-/** A cancellation the source already words is not announced a second time. */
-const statusNotices = (entry: BoardEntry): BoardMessage[] => {
-  if (entry.status === 'replacement') return [notice('Ersatzzug')];
-  if (entry.status !== 'cancelled') return [];
-  const worded = displayableMessages(entry.messages).find(
-    (message) => message.kind === 'cancellation',
-  );
-  return [worded ?? notice('Zug fällt aus', 'cancellation')];
-};
-
-const routeNotices = (entry: DepartureEntry): BoardMessage[] => {
-  if (entry.status === 'cancelled') return [];
-  return entry.routeChanges.map((change) => notice(routeText(change, entry.destination.name)));
-};
+const rowHints = (notices: TrainNotices, destinationName: string): readonly BoardMessage[] => [
+  ...(notices.replacement ? [notice('Ersatzzug')] : []),
+  // A cancellation the source already words is not announced a second time.
+  ...(notices.cancellation === undefined
+    ? []
+    : [notices.cancellation.message ?? notice('Zug fällt aus', 'cancellation')]),
+  ...notices.routeChanges.map((change) => notice(routeText(change, destinationName))),
+];
 
 const routeText = (change: RouteChange, destinationName: string): string => {
   if (change.kind === 'endsEarly') return `Heute nur bis ${destinationName}`;
