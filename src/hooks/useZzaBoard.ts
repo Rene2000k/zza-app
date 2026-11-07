@@ -1,5 +1,5 @@
 import { changedAwayFrom, dataAgeSeconds, isStale, relevantEntries } from '@/domain/board';
-import { sortByTime } from '@/domain/boardEntry';
+import { sortByPlannedTime, sortByTime } from '@/domain/boardEntry';
 import { collapseCoupledParts, coupledPartners } from '@/domain/coupling';
 import { displayableMessages } from '@/domain/message';
 import { useBoard } from './useBoard';
@@ -46,6 +46,14 @@ export interface ReadyBoard {
    * as many as it has rows for.
    */
   readonly following: readonly BoardEntry[];
+  /**
+   * The whole board in timetable order — the current train, its second part and every
+   * following train, sorted by planned time, so delayed, cancelled and moved trains keep their
+   * place. For a display that lists departures rather than featuring a main train.
+   */
+  readonly entries: readonly BoardEntry[];
+  /** The instant this board describes: the display clock, and the reference for countdowns. */
+  readonly now: Date;
   /** Messages of the current train that have a text — material for a running line. */
   readonly messages: readonly BoardMessage[];
   /** Age of the data in seconds, measured against the clock. */
@@ -92,6 +100,8 @@ export const useZzaBoard = (config: DisplayConfig): ZzaBoardViewModel => {
     current,
     secondPart,
     following: [...entries.filter(leavesNotHere), ...rest.filter((entry) => entry !== secondPart)],
+    entries: sortByPlannedTime(entries),
+    now,
     messages: tickerMessages(current),
     dataAgeSeconds: dataAgeSeconds(board, now),
     stale: isStale(board, now, staleAfterSeconds),

@@ -1,3 +1,4 @@
+import { sortByPlannedTime } from '@/domain/boardEntry';
 import type { DepartureEntry, EntryTime, TerminatingArrivalEntry } from '@/domain/boardEntry';
 import type { StationRef } from '@/domain/station';
 import type { ReadyBoard, ZzaBoardViewModel } from '@/hooks/useZzaBoard';
@@ -38,18 +39,25 @@ const departure = (overrides: Partial<DepartureEntry> & { id: string }): Departu
   ...overrides,
 });
 
-const ready = (overrides: Partial<ReadyBoard>): ReadyBoard => ({
-  state: 'ready',
-  station,
-  platform: '9',
-  current: undefined,
-  secondPart: undefined,
-  following: [],
-  messages: [],
-  dataAgeSeconds: 4,
-  stale: false,
-  ...overrides,
-});
+/** The whole board in time order is derived from the slots, so the two cannot disagree. */
+const ready = (overrides: Partial<ReadyBoard>): ReadyBoard => {
+  const { current, secondPart, following = [] } = overrides;
+  const listed = [current, secondPart, ...following].filter((entry) => entry !== undefined);
+  return {
+    state: 'ready',
+    station,
+    platform: '9',
+    current: undefined,
+    secondPart: undefined,
+    following: [],
+    entries: sortByPlannedTime(listed),
+    now: reference,
+    messages: [],
+    dataAgeSeconds: 4,
+    stale: false,
+    ...overrides,
+  };
+};
 
 const ice: DepartureEntry = departure({ id: 'ice-571' });
 

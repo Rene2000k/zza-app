@@ -41,6 +41,8 @@ const ready = (overrides: Partial<ReadyBoard>): ReadyBoard => ({
   current: undefined,
   secondPart: undefined,
   following: [],
+  entries: [],
+  now: new Date(Date.UTC(2026, 8, 11, 8, 0)),
   messages: [],
   dataAgeSeconds: 4,
   stale: false,

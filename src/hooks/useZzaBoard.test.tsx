@@ -75,6 +75,21 @@ describe('useZzaBoard', () => {
     expect([...times].sort((a, b) => a - b)).toEqual(times);
   });
 
+  it('also lists the whole board in timetable order, with the clock it was built at', async () => {
+    const { result } = renderBoard();
+    await waitFor(() => expect(result.current.state).toBe('ready'));
+
+    const board = result.current;
+    if (board.state !== 'ready') throw new Error('expected a ready board');
+    const times = board.entries.map((entry) => entry.time.planned.getTime());
+    expect([...times].sort((a, b) => a - b)).toEqual(times);
+    // The cancelled RB 15702 keeps its place in time here, unlike among the following trains.
+    expect(board.entries.some((entry) => entry.id === 'mock-rb-15702')).toBe(true);
+    expect(board.entries[0]?.id).not.toBe('mock-rb-15702');
+    expect(board.entries).toHaveLength(board.following.length + 1);
+    expect(board.now.toISOString()).toBe('2026-09-09T06:00:00.000Z');
+  });
+
   it('offers the current train’s resolved messages for a running line', async () => {
     const { result } = renderBoard({ platform: '12' });
     await waitFor(() => expect(result.current.state).toBe('ready'));

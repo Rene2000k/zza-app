@@ -105,3 +105,11 @@ export const entrySortKey = (entry: BoardEntry): number => entry.time.expected.g
 
 export const sortByTime = (entries: readonly BoardEntry[]): BoardEntry[] =>
   [...entries].sort((a, b) => entrySortKey(a) - entrySortKey(b));
+
+/**
+ * Timetable order: by planned time, so a delayed train keeps its place and its delay shows
+ * beside it — the order of a station's departure board. The sort is stable, so entries with
+ * the same planned time keep the order they came in.
+ */
+export const sortByPlannedTime = (entries: readonly BoardEntry[]): BoardEntry[] =>
+  [...entries].sort((a, b) => a.time.planned.getTime() - b.time.planned.getTime());
