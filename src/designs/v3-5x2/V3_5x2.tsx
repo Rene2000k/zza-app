@@ -6,6 +6,7 @@ import {
   Ticker,
   TrainFormationDisplay,
   formatClockTime,
+  formatDelay,
   haltChangePictograms,
 } from '@/components/zza';
 import { announcedDelayMinutes, headlineStation } from '@/domain/boardEntry';
@@ -210,8 +211,7 @@ const RunningLine = ({
  * has none: its running line says it does not run, and a delay beside that contradicts it.
  */
 const DeviationField = ({ className, entry }: FieldProps & { readonly entry: BoardEntry }) => {
-  const minutes = announcedDelayMinutes(entry);
-  const deviation = minutes > 0 ? `+${minutes}` : undefined;
+  const deviation = formatDelay(announcedDelayMinutes(entry));
   return (
     <div className={className} data-inverted={deviation !== undefined}>
       {deviation}

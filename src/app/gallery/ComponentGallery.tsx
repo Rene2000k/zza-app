@@ -7,6 +7,7 @@ import {
   formatClockTime,
   formatDelay,
 } from '@/components/zza';
+import { delayMinutes } from '@/domain/boardEntry';
 import styles from './ComponentGallery.module.css';
 import type { ReactNode } from 'react';
 import type { EntryTime } from '@/domain/boardEntry';
@@ -211,6 +212,6 @@ const blocks: readonly BlockSection[] = [
 const formatterRows: readonly (readonly [string, string])[] = [
   ['formatClockTime(time.planned)', formatClockTime(onTime.planned)],
   ['formatClockTime(time.expected)', formatClockTime(delayed.expected)],
-  ['formatDelay(time)', formatDelay(delayed) ?? '(nichts)'],
-  ['formatDelay(time) — pünktlich', formatDelay(onTime) ?? '(nichts)'],
+  ['formatDelay(delayMinutes(time))', formatDelay(delayMinutes(delayed)) ?? '(nichts)'],
+  ['formatDelay(delayMinutes(time)) — pünktlich', formatDelay(delayMinutes(onTime)) ?? '(nichts)'],
 ];

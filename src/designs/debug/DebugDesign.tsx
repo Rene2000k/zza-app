@@ -5,7 +5,7 @@ import {
   formatClockTime,
   formatDelay,
 } from '@/components/zza';
-import { headlineStation } from '@/domain/boardEntry';
+import { delayMinutes, headlineStation } from '@/domain/boardEntry';
 import { displayableMessages } from '@/domain/message';
 import { trainLabel } from '@/domain/train';
 import { trainNotices } from '@/domain/trainNotices';
@@ -71,7 +71,7 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
         <section className={styles.main}>
           <div className={styles.times}>
             <span className={styles.time}>{formatClockTime(current.time.planned)}</span>
-            <span className={styles.delay}>{formatDelay(current.time) ?? '±0'}</span>
+            <span className={styles.delay}>{formatDelay(delayMinutes(current.time)) ?? '±0'}</span>
             <span className={styles.delay}>ist {formatClockTime(current.time.expected)}</span>
             <span className={styles.train}>{trainLabel(current.train)}</span>
           </div>
@@ -97,7 +97,9 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
         {ready.following.map((entry) => (
           <li key={entry.id}>
             <span className={styles.followingTime}>{formatClockTime(entry.time.planned)}</span>
-            <span className={styles.followingDelay}>{formatDelay(entry.time) ?? ''}</span>
+            <span className={styles.followingDelay}>
+              {formatDelay(delayMinutes(entry.time)) ?? ''}
+            </span>
             <span>{trainLabel(entry.train)}</span>
             <span className={styles.followingRoute}>{routeText(entry)}</span>
             <span>{hintFor(entry, context) ?? ''}</span>
