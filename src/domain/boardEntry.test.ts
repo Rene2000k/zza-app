@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { delayMinutes, isDelayed, sortByPlannedTime, sortByTime } from './boardEntry';
+import {
+  announcedDelayMinutes,
+  delayMinutes,
+  isDelayed,
+  sortByPlannedTime,
+  sortByTime,
+} from './boardEntry';
 import type { BoardEntry } from './boardEntry';
 
 const at = (isoPlanned: string, isoExpected: string) => ({
@@ -34,6 +40,29 @@ describe('delay derived from the two timestamps', () => {
 
   it('handles a delay across midnight', () => {
     expect(delayMinutes(at('2026-09-10T23:55:00Z', '2026-09-11T00:10:00Z'))).toBe(15);
+  });
+});
+
+describe('delay a display announces', () => {
+  const entry = (status: BoardEntry['status']): BoardEntry => ({
+    kind: 'departure',
+    id: 'RE 4711',
+    train: { category: 'RE', number: '4711' },
+    platform: { planned: '3', actual: '3', changed: false },
+    time: at('2026-09-10T08:00:00Z', '2026-09-10T08:12:00Z'),
+    status,
+    messages: [],
+    routeChanges: [],
+    destination: { name: 'Gießen' },
+    via: [],
+  });
+
+  it('is the delay of a train that runs', () => {
+    expect(announcedDelayMinutes(entry('delayed'))).toBe(12);
+  });
+
+  it('is none for a cancelled train, however late the source still expects it', () => {
+    expect(announcedDelayMinutes(entry('cancelled'))).toBe(0);
   });
 });
 

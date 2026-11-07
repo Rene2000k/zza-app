@@ -199,8 +199,26 @@ describe('Station overview design', () => {
     );
     expect(screen.getByText(/Zug fällt aus/).closest('[data-inverted="true"]')).not.toBeNull();
     expect(screen.queryByText('Bad Vilbel')).toBeNull();
-    // A train that does not run has no expected time.
-    expect(screen.queryByText('10:16')).toBeNull();
+  });
+
+  it('words the cancellation as the source does when it says so itself', () => {
+    show(
+      ready([
+        departure({
+          id: 'x',
+          status: 'cancelled',
+          messages: [{ kind: 'cancellation', text: 'Fahrt fällt heute aus' }],
+        }),
+      ]),
+    );
+    expect(screen.getByText(/Fahrt fällt heute aus/)).toBeDefined();
+    expect(screen.queryByText(/Zug fällt aus/)).toBeNull();
+  });
+
+  it('says a replacement train is one in place of its via stops', () => {
+    show(ready([departure({ id: 'x', status: 'replacement', via: route('Bad Vilbel') })]));
+    expect(screen.getByText(/Ersatzzug/).closest('[data-inverted="true"]')).not.toBeNull();
+    expect(screen.queryByText('Bad Vilbel')).toBeNull();
   });
 
   it('words skipped stops in place of the via stops', () => {

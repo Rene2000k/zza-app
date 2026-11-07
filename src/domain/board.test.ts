@@ -48,7 +48,11 @@ const terminating = (id: string, offsetMinutes: number): BoardEntry => ({
 
 describe('board selection', () => {
   it('orders entries by the time that governs them', () => {
-    const sorted = sortByTime([departure('late', 20), terminating('mid', 10), departure('soon', 2)]);
+    const sorted = sortByTime([
+      departure('late', 20),
+      terminating('mid', 10),
+      departure('soon', 2),
+    ]);
     expect(sorted.map((entry) => entry.id)).toEqual(['soon', 'mid', 'late']);
   });
 
@@ -116,6 +120,11 @@ describe('entriesForPlatform (ADR-0006)', () => {
     expect(changedAwayFrom(onPlatform('9', '4', true), '9')).toBe(true);
     expect(changedAwayFrom(onPlatform('7', '9', true), '9')).toBe(false);
     expect(changedAwayFrom(onPlatform('9', '9', false), '9')).toBe(false);
+  });
+
+  it('counts any platform change as changed away for a station-wide display', () => {
+    expect(changedAwayFrom(onPlatform('7', '9', true), undefined)).toBe(true);
+    expect(changedAwayFrom(onPlatform('9', '9', false), undefined)).toBe(false);
   });
 });
 

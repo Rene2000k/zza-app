@@ -278,7 +278,6 @@ const mapDeparture = (
 
   const status = resolveStatus(change?.dp, time);
   const messages = collectMessages(change?.ownMessages ?? [], change?.dp);
-  if (status === 'cancelled') messages.push({ kind: 'cancellation', text: 'Zug fällt aus' });
 
   // A cancelled stop reports no route change: the cancellation is the statement, and a train
   // that does not run cannot skip a stop. Keyed on the status rather than on an empty `cpth`,
@@ -317,7 +316,6 @@ const mapTerminating = (
 
   const status = resolveStatus(change?.ar, time);
   const messages = collectMessages(change?.ownMessages ?? [], change?.ar);
-  if (status === 'cancelled') messages.push({ kind: 'cancellation', text: 'Zug fällt aus' });
 
   return {
     kind: 'terminatingArrival',

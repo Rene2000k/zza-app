@@ -76,14 +76,14 @@
   gap: 12px;
 }
 
-.hint {
+.notice {
   padding: 0 4px;
   background: #ff2f2f;
   color: #ffffff;
 }
 
-.hintHidden {
-  composes: hint;
+.noticeHidden {
+  composes: notice;
   visibility: hidden;
 }
 

@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { V4_5x2 } from './V4_5x2';
 import type { DepartureEntry, EntryTime, TerminatingArrivalEntry } from '@/domain/boardEntry';
+import type { BoardMessage } from '@/domain/message';
+import type { RouteChange } from '@/domain/routeChange';
 import type { ReadyBoard, ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
 const at = (minutes: number, delay = 0): EntryTime => {
@@ -101,16 +103,10 @@ describe('V4 5X2 design', () => {
     expect(invertedFields(container)).toHaveLength(2);
   });
 
-  it('shows no expected time below a full minute of delay, nor for a cancelled train', () => {
-    const container = show(
-      ready({
-        current: departure({ id: 'x', time: at(9, 0) }),
-        following: [departure({ id: 'y', time: at(20, 7), status: 'cancelled' })],
-      }),
-    );
-    expect(screen.queryByText('10:27')).toBeNull();
-    // Only the cancelled row itself is inverted.
-    expect(invertedFields(container)).toHaveLength(1);
+  it('shows no expected time below a full minute of delay', () => {
+    const container = show(ready({ current: departure({ id: 'x', time: at(9, 0.5) }) }));
+    expect(screen.getByText('10:09')).toBeDefined();
+    expect(invertedFields(container)).toHaveLength(0);
   });
 
   it('runs train notices above a rule, not inverted', () => {
@@ -123,11 +119,13 @@ describe('V4 5X2 design', () => {
   it('leaves delay causes and disruption reports out of the running line', () => {
     const container = show(
       ready({
-        current: departure({ id: 'x' }),
-        messages: [
-          { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
-          { kind: 'disruption', text: 'Störung' },
-        ],
+        current: departure({
+          id: 'x',
+          messages: [
+            { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
+            { kind: 'disruption', text: 'Störung' },
+          ],
+        }),
       }),
     );
     expect(screen.queryByText(/vorausfahrenden/)).toBeNull();
@@ -138,16 +136,18 @@ describe('V4 5X2 design', () => {
   it('runs the quality notices whose topic it shows, and leaves out the others', () => {
     show(
       ready({
-        current: departure({ id: 'x' }),
-        messages: [
-          { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
-          {
-            kind: 'qualityNotice',
-            code: '70',
-            topic: 'onboardServices',
-            text: 'WLAN nicht verfügbar',
-          },
-        ],
+        current: departure({
+          id: 'x',
+          messages: [
+            { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+            {
+              kind: 'qualityNotice',
+              code: '70',
+              topic: 'onboardServices',
+              text: 'WLAN nicht verfügbar',
+            },
+          ],
+        }),
       }),
     );
     expect(screen.getByText('Ein Wagen fehlt')).toBeDefined();
@@ -167,14 +167,14 @@ describe('V4 5X2 design', () => {
     expect(screen.getByText('Ersatzzug +++ Heute von Gleis 4')).toBeDefined();
   });
 
-  it('does not announce a cancellation twice when the source already words it', () => {
-    show(
-      ready({
-        current: departure({ id: 'x', status: 'cancelled' }),
-        messages: [{ kind: 'cancellation', code: '80', text: 'Zug fällt aus' }],
-      }),
-    );
-    expect(screen.getByText('Zug fällt aus')).toBeDefined();
+  it('words a cancellation in the source’s words when it has them, once and where they stand', () => {
+    const messages: BoardMessage[] = [
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+      { kind: 'cancellation', code: '80', text: 'Fällt heute aus' },
+    ];
+    show(ready({ current: departure({ id: 'x', status: 'cancelled', messages }) }));
+    expect(screen.getByText('Ein Wagen fehlt +++ Fällt heute aus')).toBeDefined();
+    expect(screen.queryByText(/Zug fällt aus/)).toBeNull();
   });
 
   it('words route changes and marks the main train with H+ and H−, in that order', () => {
@@ -198,6 +198,18 @@ describe('V4 5X2 design', () => {
       'Zusätzlicher Halt',
       'Halt entfällt',
     ]);
+  });
+
+  it('neither words nor marks route changes for a cancelled train', () => {
+    const routeChanges: RouteChange[] = [{ kind: 'skippedStops', stops: route('Duisburg Hbf') }];
+    show(
+      ready({
+        current: departure({ id: 'x', status: 'cancelled', routeChanges }),
+        following: [departure({ id: 'y', time: at(20), status: 'cancelled', routeChanges })],
+      }),
+    );
+    expect(screen.queryByText(/Duisburg/)).toBeNull();
+    expect(screen.queryByRole('img', { name: 'Halt entfällt' })).toBeNull();
   });
 
   it('words a shortened run with the destination the train really reaches', () => {
@@ -257,18 +269,6 @@ describe('V4 5X2 design', () => {
       expect(screen.getByRole('img', { name: 'Gleiswechsel' })).toBeDefined();
       expect(screen.getByText(/Gleis 6/)).toBeDefined();
       expect(invertedFields(container)).toHaveLength(1);
-    });
-
-    it('leaves a train that changed to this platform as it is', () => {
-      const container = show(
-        ready({
-          following: [
-            departure({ id: 'x', platform: { planned: '4', actual: '9', changed: true } }),
-          ],
-        }),
-      );
-      expect(screen.queryByRole('img')).toBeNull();
-      expect(invertedFields(container)).toHaveLength(0);
     });
 
     it('carries route changes, quality notices and halt boxes', () => {
@@ -393,15 +393,6 @@ describe('V4 5X2 design', () => {
       expect(screen.getByText('Verspätung ca. 10 Min.')).toBeDefined();
       expect(container.textContent).not.toContain('Wetzlar');
       expect(screen.getAllByRole('img', { name: 'Zugteilung' })).toHaveLength(1);
-    });
-
-    it('announces and marks no split when one part does not run', () => {
-      show(
-        ready({ current: toKassel, secondPart: departure({ ...toSiegen, status: 'cancelled' }) }),
-      );
-      expect(screen.queryByText(/geteilt/)).toBeNull();
-      expect(screen.queryByRole('img', { name: 'Zugteilung' })).toBeNull();
-      expect(screen.getByText('Zug fällt aus')).toBeDefined();
     });
   });
 

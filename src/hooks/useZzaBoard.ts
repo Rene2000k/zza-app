@@ -1,7 +1,7 @@
 import { changedAwayFrom, dataAgeSeconds, isStale, relevantEntries } from '@/domain/board';
 import { sortByPlannedTime, sortByTime } from '@/domain/boardEntry';
 import { collapseCoupledParts, coupledPartners } from '@/domain/coupling';
-import { displayableMessages } from '@/domain/message';
+import { uniqueMessages } from '@/domain/message';
 import { useBoard } from './useBoard';
 import { useNow } from './useClock';
 import type { BoardEntry } from '@/domain/boardEntry';
@@ -102,23 +102,8 @@ export const useZzaBoard = (config: DisplayConfig): ZzaBoardViewModel => {
     following: [...entries.filter(leavesNotHere), ...rest.filter((entry) => entry !== secondPart)],
     entries: sortByPlannedTime(entries),
     now,
-    messages: tickerMessages(current),
+    messages: current === undefined ? [] : uniqueMessages(current.messages),
     dataAgeSeconds: dataAgeSeconds(board, now),
     stale: isStale(board, now, staleAfterSeconds),
   };
-};
-
-/**
- * The same text often arrives twice — once from the stop, once from the movement — and a
- * running line that says it twice looks broken, so identical texts are collapsed.
- */
-const tickerMessages = (entry: BoardEntry | undefined): readonly BoardMessage[] => {
-  if (entry === undefined) return [];
-  const seen = new Set<string>();
-  return displayableMessages(entry.messages).filter((message) => {
-    const text = message.text ?? '';
-    if (seen.has(text)) return false;
-    seen.add(text);
-    return true;
-  });
 };
