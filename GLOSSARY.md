@@ -12,6 +12,11 @@ A text the data source delivers about a train, such as a delay cause, a disrupti
 quality message about the train itself.
 _Avoid_: hint, notice (for source texts)
 
+**Quality message**:
+A message from the source about the train's own quality: its coach order, missing coaches,
+bicycles, catering, accessibility, occupancy, a bus replacing it.
+_Avoid_: quality notice
+
 **Notice**:
 A statement a display derives from the train's own state rather than receiving it from the source:
 it is cancelled, it is a replacement, it splits at a stop, it leaves from another platform today, its
