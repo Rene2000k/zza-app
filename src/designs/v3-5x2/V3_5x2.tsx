@@ -13,7 +13,7 @@ import { delayMinutes, headlineStation } from '@/domain/boardEntry';
 import { splitStop } from '@/domain/coupling';
 import { displayableMessages } from '@/domain/message';
 import { isSamePlatform } from '@/domain/station';
-import { formatTrainRef } from '@/domain/train';
+import { trainLabel } from '@/domain/train';
 import { selectViaStops } from '@/domain/via';
 import styles from './v3-5x2.module.css';
 import type { BoardEntry } from '@/domain/boardEntry';
@@ -112,7 +112,7 @@ const MainTrain = ({ entry }: { readonly entry: BoardEntry }) => (
   <>
     <div className={styles.time}>{formatClockTime(entry.time.planned)}</div>
     <div className={styles.train}>
-      <FittedText>{trainLabel(entry)}</FittedText>
+      <FittedText>{trainLabel(entry.train)}</FittedText>
       <HaltPictograms entry={entry} />
     </div>
     {/* The real display leaves the area empty without a coach sequence, strip included. */}
@@ -143,7 +143,7 @@ const FollowingTrain = ({
     <div className={styles.followingTime}>{formatClockTime(entry.time.planned)}</div>
     <DeviationField className={styles.followingDeviation} entry={entry} />
     <div className={styles.followingTrain}>
-      <FittedText>{trainLabel(entry)}</FittedText>
+      <FittedText>{trainLabel(entry.train)}</FittedText>
     </div>
     <div className={styles.followingDestination}>
       <FittedText>{headline(entry)}</FittedText>
@@ -204,8 +204,6 @@ const DeviationField = ({ className, entry }: FieldProps & { readonly entry: Boa
     </div>
   );
 };
-
-const trainLabel = (entry: BoardEntry): string => entry.train.line ?? formatTrainRef(entry.train);
 
 /** Where the train goes, or where it came from when it ends here. */
 const headline = (entry: BoardEntry): string =>

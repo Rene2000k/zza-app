@@ -20,6 +20,9 @@ export interface TrainRef {
 export const formatTrainRef = (train: TrainRef): string =>
   `${train.category} ${train.number}`.trim();
 
+/** How the designs name a train in text: its line label "RE60" where it has one, else "ICE 571". */
+export const trainLabel = (train: TrainRef): string => train.line ?? formatTrainRef(train);
+
 /**
  * The kind of service a train belongs to, as far as a display tells them apart: long-distance,
  * regional, or a suburban S-Bahn.

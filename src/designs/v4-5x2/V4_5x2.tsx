@@ -14,7 +14,7 @@ import { delayMinutes, headlineStation } from '@/domain/boardEntry';
 import { splitStop } from '@/domain/coupling';
 import { displayableMessages } from '@/domain/message';
 import { isSamePlatform } from '@/domain/station';
-import { formatTrainRef } from '@/domain/train';
+import { trainLabel } from '@/domain/train';
 import { selectViaStops } from '@/domain/via';
 import styles from './v4-5x2.module.css';
 import type { BoardEntry, DepartureEntry, TerminatingArrivalEntry } from '@/domain/boardEntry';
@@ -125,7 +125,7 @@ const Departure = ({
       {entry === undefined ? null : (
         <>
           <div className={styles.train}>
-            <FittedText>{trainLabel(entry)}</FittedText>
+            <FittedText>{trainLabel(entry.train)}</FittedText>
           </div>
           <HaltPictograms className={styles.pictograms} entry={entry} />
           <div className={viaHasBand ? styles.viaTwoLines : styles.via}>
@@ -176,7 +176,7 @@ const SecondPart = ({
     <>
       <div className={styles.bracket} aria-hidden="true" />
       <div className={styles.secondTrain}>
-        <FittedText>{trainLabel(entry)}</FittedText>
+        <FittedText>{trainLabel(entry.train)}</FittedText>
       </div>
       {hints.length > 0 || entry.kind !== 'departure' ? (
         <RunningLine className={styles.secondHint} messages={hints} emphasis="ruled" />
@@ -214,7 +214,7 @@ const Arrival = ({
       <RunningLine className={styles.banner} messages={banner} emphasis="inverted" />
       <div className={styles.boardingWarning}>Bitte nicht einsteigen</div>
       <div className={styles.train}>
-        <FittedText>{trainLabel(entry)}</FittedText>
+        <FittedText>{trainLabel(entry.train)}</FittedText>
       </div>
       <div className={styles.arrivalOrigin}>
         <FittedText>{`von ${entry.origin.name}`}</FittedText>
@@ -427,8 +427,6 @@ const RunningLine = ({ className, messages, emphasis }: RunningLineProps) => {
   );
 };
 
-const trainLabel = (entry: BoardEntry): string => entry.train.line ?? formatTrainRef(entry.train);
-
 /**
  * "ICE 1028  Ankunft von Köln Hbf  Zug fällt aus": the train, where it goes — or where it
  * comes from when it ends here — the next via stop, and the notices that concern it.
@@ -442,7 +440,7 @@ const followingText = (entry: BoardEntry): string => {
         ]
       : [`Ankunft von ${entry.origin.name}`];
   const hints = followingHints(entry).map((message) => message.text ?? '');
-  return [trainLabel(entry), ...route, ...hints].join(ROW_GAP);
+  return [trainLabel(entry.train), ...route, ...hints].join(ROW_GAP);
 };
 
 /**

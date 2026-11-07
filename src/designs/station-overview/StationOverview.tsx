@@ -9,7 +9,7 @@ import { FittedText, Marquee, Pictogram, Ticker, formatClockTime } from '@/compo
 import { delayMinutes } from '@/domain/boardEntry';
 import { splitStop } from '@/domain/coupling';
 import { displayableMessages } from '@/domain/message';
-import { formatTrainRef, serviceClass } from '@/domain/train';
+import { serviceClass, trainLabel } from '@/domain/train';
 import { selectViaStops } from '@/domain/via';
 import { useBlink } from '@/hooks/useBlink';
 import styles from './station-overview.module.css';
@@ -168,7 +168,7 @@ const Row = ({
       <div className={styles.train}>
         <FittedText>
           <span className={styles.trainTag} data-service={service}>
-            {trainLabel(entry)}
+            {trainLabel(entry.train)}
           </span>
         </FittedText>
       </div>
@@ -253,8 +253,6 @@ const ViaStops = ({
     </FittedText>
   );
 };
-
-const trainLabel = (entry: BoardEntry): string => entry.train.line ?? formatTrainRef(entry.train);
 
 const isDeparture = (entry: BoardEntry): entry is DepartureEntry => entry.kind === 'departure';
 

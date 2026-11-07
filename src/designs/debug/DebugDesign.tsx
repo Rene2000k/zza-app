@@ -8,7 +8,7 @@ import {
 import { headlineStation } from '@/domain/boardEntry';
 import { displayableMessages } from '@/domain/message';
 import { isSamePlatform } from '@/domain/station';
-import { formatTrainRef } from '@/domain/train';
+import { trainLabel } from '@/domain/train';
 import { selectViaStops } from '@/domain/via';
 import { useBlink } from '@/hooks/useBlink';
 import { useRotation } from '@/hooks/useRotation';
@@ -71,9 +71,7 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
             <span className={styles.time}>{formatClockTime(current.time.planned)}</span>
             <span className={styles.delay}>{formatDelay(current.time) ?? '±0'}</span>
             <span className={styles.delay}>ist {formatClockTime(current.time.expected)}</span>
-            <span className={styles.train}>
-              {current.train.line ?? formatTrainRef(current.train)}
-            </span>
+            <span className={styles.train}>{trainLabel(current.train)}</span>
           </div>
 
           <div className={styles.destination}>
@@ -98,7 +96,7 @@ export const DebugDesign = ({ board }: DebugDesignProps) => {
           <li key={entry.id}>
             <span className={styles.followingTime}>{formatClockTime(entry.time.planned)}</span>
             <span className={styles.followingDelay}>{formatDelay(entry.time) ?? ''}</span>
-            <span>{entry.train.line ?? formatTrainRef(entry.train)}</span>
+            <span>{trainLabel(entry.train)}</span>
             <span className={styles.followingRoute}>{routeText(entry)}</span>
             <span>{hintFor(entry, ready.platform) ?? ''}</span>
           </li>

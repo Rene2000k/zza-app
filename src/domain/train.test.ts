@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { serviceClass } from './train';
+import { serviceClass, trainLabel } from './train';
+
+describe('train label', () => {
+  it('is the line label where the train has one', () => {
+    expect(trainLabel({ category: 'RE', number: '4211', line: 'RE60' })).toBe('RE60');
+  });
+
+  it('falls back to category and number for a train without a line', () => {
+    expect(trainLabel({ category: 'ICE', number: '571' })).toBe('ICE 571');
+  });
+});
 
 describe('service class', () => {
   it('tells long-distance trains by their category', () => {
