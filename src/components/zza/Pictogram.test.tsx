@@ -10,8 +10,14 @@ describe('Pictogram', () => {
         <Pictogram id="haltMinus" />
         <Pictogram id="platformChange" />
         <Pictogram id="trainSplit" />
+        <Pictogram id="clock" />
+        <Pictogram id="train" />
+        <Pictogram id="sBahn" />
       </>,
     );
+    expect(screen.getByRole('img', { name: 'Uhrzeit' })).toBeDefined();
+    expect(screen.getByRole('img', { name: 'Zug' })).toBeDefined();
+    expect(screen.getByRole('img', { name: 'S-Bahn' })).toBeDefined();
     expect(screen.getByRole('img', { name: 'Zusätzlicher Halt' })).toBeDefined();
     expect(screen.getByRole('img', { name: 'Halt entfällt' })).toBeDefined();
     expect(screen.getByRole('img', { name: 'Gleiswechsel' })).toBeDefined();

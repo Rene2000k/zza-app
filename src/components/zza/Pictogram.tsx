@@ -6,7 +6,13 @@ export type PictogramId =
   /** A train leaving from another platform than the one the display stands at. */
   | 'platformChange'
   /** Where a coupled train is split into its parts. */
-  | 'trainSplit';
+  | 'trainSplit'
+  /** The clock face before the time in a station display's header. */
+  | 'clock'
+  /** A train — every service that is not an S-Bahn — before the train's name. */
+  | 'train'
+  /** An S-Bahn, before the line's name. */
+  | 'sBahn';
 
 export interface PictogramProps {
   readonly id: PictogramId;
@@ -77,6 +83,41 @@ const NOSE_RIGHT = 'M22 0H16.4L12.8 12H22V10.4H14.9L17.5 1.6H22Z';
 const COUPLING = [0, 3.47, 6.93, 10.4].map((y) => rect(10.3, y, 1.4, 1.6));
 const SPLIT = [NOSE_LEFT, ...COUPLING, NOSE_RIGHT].join('');
 
+const circle = (cx: number, cy: number, r: number): string =>
+  `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+
+/**
+ * A clock face: a ring and two hands meeting in its centre. The hands touch without
+ * overlapping, so neither cuts a hole into the other.
+ */
+const CLOCK = [
+  circle(8, 8, 8),
+  circle(8, 8, 6.4),
+  rect(7.2, 3.2, 1.6, 5.6),
+  rect(8.8, 7.2, 3.6, 1.6),
+].join('');
+
+/** The ring around the service pictograms, thinner than the clock's. */
+const SERVICE_RING = circle(8, 8, 8) + circle(8, 8, 6.8);
+
+/**
+ * The front of a train inside the ring: a body with a rounded roof, a windscreen and two lamps
+ * cut out of it, and below it the outline of the coupler skirt. Nothing touches the ring.
+ */
+const TRAIN_BODY = 'M5 10.2V4.6Q5 2.8 8 2.8Q11 2.8 11 4.6V10.2Z';
+const WINDSCREEN = rect(6.2, 4.4, 3.6, 3.2);
+const LAMPS = rect(5.8, 8.6, 1, 0.8) + rect(9.2, 8.6, 1, 0.8);
+const SKIRT = 'M5.4 10.9H10.6L11.6 13.2H4.4Z' + 'M6 11.7L5.5 12.5H10.5L10 11.7Z';
+const TRAIN = [SERVICE_RING, TRAIN_BODY, WINDSCREEN, LAMPS, SKIRT].join('');
+
+/**
+ * The S inside the ring, as two thick arcs of 250° each that meet edge to edge in the middle —
+ * touching, not overlapping, so the even-odd rule leaves them filled.
+ */
+const S_UPPER = 'M10.725 4.808A2.9 2.9 0 1 0 8 8.7L8 7.3A1.5 1.5 0 1 1 9.41 5.287Z';
+const S_LOWER = 'M8 7.3A2.9 2.9 0 1 1 5.275 11.192L6.59 10.713A1.5 1.5 0 1 0 8 8.7Z';
+const S_BAHN = [SERVICE_RING, S_UPPER, S_LOWER].join('');
+
 const drawings: Record<PictogramId, Drawing> = {
   haltPlus: {
     label: 'Zusätzlicher Halt',
@@ -101,5 +142,23 @@ const drawings: Record<PictogramId, Drawing> = {
     width: 22,
     height: 12,
     path: SPLIT,
+  },
+  clock: {
+    label: 'Uhrzeit',
+    width: 16,
+    height: 16,
+    path: CLOCK,
+  },
+  train: {
+    label: 'Zug',
+    width: 16,
+    height: 16,
+    path: TRAIN,
+  },
+  sBahn: {
+    label: 'S-Bahn',
+    width: 16,
+    height: 16,
+    path: S_BAHN,
   },
 };
