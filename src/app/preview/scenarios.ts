@@ -223,6 +223,40 @@ const longName: DepartureEntry = departure({
   ],
 });
 
+const onPlatform = <T extends DepartureEntry>(entry: T, platform: string): T => ({
+  ...entry,
+  platform: { planned: platform, actual: platform, changed: false },
+});
+
+/** Leaves in two minutes — close enough for a station display to mark it as about to go. */
+const sBahn: DepartureEntry = departure({
+  id: 's-35862',
+  train: { category: 'S', number: '35862', line: 'S8' },
+  platform: { planned: '103', actual: '103', changed: false },
+  time: at(2),
+  destination: { name: 'Wiesbaden Hbf' },
+  via: [{ name: 'Frankfurt(Main)Taunusanlage' }, { name: 'Frankfurt-Niederrad' }],
+});
+
+/** Every train of the station, as a station-wide display lists them. */
+const wholeStation = ready({
+  platform: undefined,
+  current: sBahn,
+  following: [
+    ice,
+    diverted,
+    onPlatform(toKassel, '13'),
+    onPlatform(toSiegen, '13'),
+    movedAway,
+    terminating,
+    onPlatform(regional, '12'),
+    onPlatform(turnsShort, '21'),
+    cancelled,
+    onPlatform(replacement, '20'),
+    longName,
+  ],
+});
+
 export const previewScenarios: readonly PreviewScenario[] = [
   {
     id: 'regelbetrieb',
@@ -299,6 +333,7 @@ export const previewScenarios: readonly PreviewScenario[] = [
     name: 'Daten veraltet',
     board: ready({ current: ice, following: [regional], dataAgeSeconds: 184, stale: true }),
   },
+  { id: 'bahnhof', name: 'Ganzer Bahnhof', board: wholeStation },
   { id: 'laden', name: 'Erster Abruf läuft', board: { state: 'loading' } },
   { id: 'keine-daten', name: 'Quelle antwortet nicht', board: { state: 'unavailable' } },
 ];
