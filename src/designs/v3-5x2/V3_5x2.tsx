@@ -132,10 +132,7 @@ const SecondPart = ({
   return (
     <div className={styles.secondPart}>
       <MainTrain entry={entry} notices={notices} />
-      <RunningLine
-        className={styles.mainHint}
-        messages={trainHints(entry, notices, entry.messages)}
-      />
+      <RunningLine className={styles.mainHint} messages={trainHints(entry, notices)} />
     </div>
   );
 };
@@ -245,10 +242,7 @@ const mainHints = (
   if (board.state === 'unavailable') return [notice('Derzeit keine Zugdaten')];
 
   const { current } = board;
-  const hints =
-    current === undefined || notices === undefined
-      ? []
-      : trainHints(current, notices, board.messages);
+  const hints = current === undefined || notices === undefined ? [] : trainHints(current, notices);
   return hints.length === 0 && board.stale ? [notice('Daten nicht aktuell')] : hints;
 };
 
@@ -256,18 +250,14 @@ const mainHints = (
  * What runs above a train in the upper layout: the main train's, or that of the second part
  * of a coupled one, which says the same about itself.
  */
-const trainHints = (
-  entry: BoardEntry,
-  notices: TrainNotices,
-  messages: readonly BoardMessage[],
-): readonly BoardMessage[] =>
+const trainHints = (entry: BoardEntry, notices: TrainNotices): readonly BoardMessage[] =>
   uniqueMessages([
     ...statusNotices(notices, 'Zug fällt aus'),
     ...(entry.kind === 'terminatingArrival' ? [notice('Fahrt endet hier')] : []),
     ...splitNotice(notices),
     ...delayNotice(entry),
     ...routeNotices(entry, notices),
-    ...shown(messages),
+    ...shown(entry.messages),
     ...platformChange(notices),
   ]);
 

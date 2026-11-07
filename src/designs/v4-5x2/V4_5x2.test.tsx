@@ -119,11 +119,13 @@ describe('V4 5X2 design', () => {
   it('leaves delay causes and disruption reports out of the running line', () => {
     const container = show(
       ready({
-        current: departure({ id: 'x' }),
-        messages: [
-          { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
-          { kind: 'disruption', text: 'Störung' },
-        ],
+        current: departure({
+          id: 'x',
+          messages: [
+            { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
+            { kind: 'disruption', text: 'Störung' },
+          ],
+        }),
       }),
     );
     expect(screen.queryByText(/vorausfahrenden/)).toBeNull();
@@ -134,16 +136,18 @@ describe('V4 5X2 design', () => {
   it('runs the quality notices whose topic it shows, and leaves out the others', () => {
     show(
       ready({
-        current: departure({ id: 'x' }),
-        messages: [
-          { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
-          {
-            kind: 'qualityNotice',
-            code: '70',
-            topic: 'onboardServices',
-            text: 'WLAN nicht verfügbar',
-          },
-        ],
+        current: departure({
+          id: 'x',
+          messages: [
+            { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+            {
+              kind: 'qualityNotice',
+              code: '70',
+              topic: 'onboardServices',
+              text: 'WLAN nicht verfügbar',
+            },
+          ],
+        }),
       }),
     );
     expect(screen.getByText('Ein Wagen fehlt')).toBeDefined();
@@ -168,7 +172,7 @@ describe('V4 5X2 design', () => {
       { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
       { kind: 'cancellation', code: '80', text: 'Fällt heute aus' },
     ];
-    show(ready({ current: departure({ id: 'x', status: 'cancelled', messages }), messages }));
+    show(ready({ current: departure({ id: 'x', status: 'cancelled', messages }) }));
     expect(screen.getByText('Ein Wagen fehlt +++ Fällt heute aus')).toBeDefined();
     expect(screen.queryByText(/Zug fällt aus/)).toBeNull();
   });

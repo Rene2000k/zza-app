@@ -104,10 +104,7 @@ const Departure = ({
     entry === undefined
       ? undefined
       : trainNotices(entry, { platform: ready?.platform, coupledPart: secondPart });
-  const hints =
-    entry === undefined || notices === undefined || ready === undefined
-      ? []
-      : trainHints(entry, notices, ready.messages, { split: true });
+  const hints = entry === undefined || notices === undefined ? [] : trainHints(entry, notices);
   const banner = hints.length === 0 ? dataNotices(board) : [];
   const viaHasBand = hints.length === 0 && banner.length === 0;
 
@@ -164,11 +161,9 @@ const SecondPart = ({
   readonly partner: DepartureEntry;
   readonly platform: string | undefined;
 }) => {
-  const notices = trainNotices(entry, { platform, coupledPart: partner });
-  const hints = [
-    ...trainHints(entry, notices, entry.messages, { split: false }),
-    ...delayNotice(entry),
-  ];
+  // The split is announced above the first part only; here it only marks the via stops.
+  const { splitStop, ...unsplit } = trainNotices(entry, { platform, coupledPart: partner });
+  const hints = [...trainHints(entry, unsplit), ...delayNotice(entry)];
   return (
     <>
       <div className={styles.bracket} aria-hidden="true" />
@@ -179,7 +174,7 @@ const SecondPart = ({
         <RunningLine className={styles.secondHint} messages={hints} emphasis="ruled" />
       ) : (
         <div className={styles.secondVia}>
-          <ViaStops entry={entry} split={notices.splitStop} twoLines={false} />
+          <ViaStops entry={entry} split={splitStop} twoLines={false} />
         </div>
       )}
       <div className={styles.secondDestination}>
@@ -206,7 +201,7 @@ const Arrival = ({
   const hints =
     ready === undefined
       ? []
-      : arrivalHints(trainNotices(entry, { platform: ready.platform }), ready.messages);
+      : arrivalHints(entry, trainNotices(entry, { platform: ready.platform }));
   const banner = hints.length === 0 ? dataNotices(board) : hints;
 
   return (
@@ -456,26 +451,18 @@ const dataNotices = (board: ZzaBoardViewModel): readonly BoardMessage[] => {
  * The delay is not among them: the expected-time box states it. The split is announced above
  * the first part only — see `splitNotice`.
  */
-const trainHints = (
-  entry: BoardEntry,
-  notices: TrainNotices,
-  messages: readonly BoardMessage[],
-  { split }: { readonly split: boolean },
-): readonly BoardMessage[] =>
+const trainHints = (entry: BoardEntry, notices: TrainNotices): readonly BoardMessage[] =>
   uniqueMessages([
     ...statusNotices(notices),
-    ...(split ? splitNotice(notices) : []),
+    ...splitNotice(notices),
     ...routeNotices(entry, notices),
-    ...shown(messages),
+    ...shown(entry.messages),
     ...platformChange(notices),
   ]);
 
 /** A train ending here needs no "Fahrt endet hier" — the lower row says it in large type. */
-const arrivalHints = (
-  notices: TrainNotices,
-  messages: readonly BoardMessage[],
-): readonly BoardMessage[] =>
-  uniqueMessages([...statusNotices(notices), ...shown(messages), ...platformChange(notices)]);
+const arrivalHints = (entry: BoardEntry, notices: TrainNotices): readonly BoardMessage[] =>
+  uniqueMessages([...statusNotices(notices), ...shown(entry.messages), ...platformChange(notices)]);
 
 const followingHints = (entry: BoardEntry, notices: TrainNotices): readonly BoardMessage[] =>
   uniqueMessages([
