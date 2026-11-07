@@ -1,0 +1,367 @@
+/*
+ * The station-wide board on its 1920 × 1080 canvas: a header, a line of column labels and twelve
+ * train lines of 75 px. Positions were derived from photographs; the derivation and the column
+ * table are in layout.md.
+ */
+.display {
+  --so-lit: #0d2ca2;
+  --so-ink: #fefefe;
+  /* Surfaces of the train boxes: regional trains and the S-Bahn. */
+  --so-regional: #5b6489;
+  --so-suburban: #008d4f;
+  /* Cap height per em of the typeface. Type below is given as cap height (ADR-0010). */
+  --so-cap: 0.711;
+  /*
+   * The rules below the labels and each line, one segment per column with a gap between them.
+   * A joined pair of lines leaves out the time and train segments.
+   */
+  --so-rules: linear-gradient(
+    to right,
+    transparent 0 54px,
+    var(--so-ink) 54px 306px,
+    transparent 306px 390px,
+    var(--so-ink) 390px 580px,
+    transparent 580px 600px,
+    var(--so-ink) 600px 1150px,
+    transparent 1150px 1170px,
+    var(--so-ink) 1170px 1640px,
+    transparent 1640px 1660px,
+    var(--so-ink) 1660px 1900px,
+    transparent 1900px
+  );
+  --so-rules-joined: linear-gradient(
+    to right,
+    transparent 0 600px,
+    var(--so-ink) 600px 1150px,
+    transparent 1150px 1170px,
+    var(--so-ink) 1170px 1640px,
+    transparent 1640px 1660px,
+    var(--so-ink) 1660px 1900px,
+    transparent 1900px
+  );
+
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--so-lit);
+  color: var(--so-ink);
+  font-family: 'Roboto Condensed', sans-serif;
+  font-weight: 400;
+  /* Room below the baseline, so squeezed and running fields do not clip descenders. */
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* A field is a fixed box: its text sits vertically centred and cannot widen it. */
+.field {
+  position: absolute;
+  display: flex;
+  align-items: center;
+}
+
+.field > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inverted {
+  background: var(--so-ink);
+  color: var(--so-lit);
+}
+
+.cap16 {
+  font-size: calc(16px / var(--so-cap));
+}
+
+.cap26 {
+  font-size: calc(26px / var(--so-cap));
+}
+
+.cap30 {
+  font-size: calc(30px / var(--so-cap));
+}
+
+.cap34 {
+  font-size: calc(34px / var(--so-cap));
+}
+
+.cap44 {
+  font-size: calc(44px / var(--so-cap));
+}
+
+/* Header — the clock on the left, the board's name further in. */
+
+.clock {
+  composes: field cap44;
+  left: 36px;
+  top: 24px;
+  height: 72px;
+  gap: 18px;
+  font-weight: 700;
+}
+
+.clock > * {
+  flex: none;
+}
+
+.clockFace {
+  display: flex;
+  font-size: 56px;
+}
+
+.title {
+  composes: field cap44;
+  left: 634px;
+  top: 24px;
+  height: 72px;
+  gap: 0.25em;
+  font-weight: 700;
+}
+
+.title > * {
+  flex: none;
+}
+
+.titleGerman {
+  font-style: normal;
+}
+
+.titleEnglish {
+  font-style: italic;
+}
+
+/* Column labels — German above English, a rule below each column. */
+
+.label {
+  composes: cap16;
+  position: absolute;
+  top: 118px;
+  height: 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  line-height: 1.15;
+}
+
+.labelEnglish {
+  font-style: italic;
+}
+
+.labelPlanned {
+  composes: label;
+  left: 54px;
+}
+
+.labelExpected {
+  composes: label;
+  left: 190px;
+}
+
+.labelTrain {
+  composes: label;
+  left: 390px;
+}
+
+.labelVia {
+  composes: label;
+  left: 600px;
+}
+
+.labelDestination {
+  composes: label;
+  left: 1170px;
+}
+
+.labelPlatform {
+  composes: label;
+  left: 1660px;
+}
+
+.labelRules {
+  position: absolute;
+  left: 0;
+  top: 176px;
+  width: 1920px;
+  height: 2px;
+  background: var(--so-rules);
+}
+
+/* A train line — its top is set per line, from 180 px in steps of 75. */
+
+.row {
+  position: absolute;
+  left: 0;
+  width: 1920px;
+  height: 75px;
+}
+
+.rules {
+  position: absolute;
+  left: 0;
+  top: 73px;
+  width: 1920px;
+  height: 2px;
+  background: var(--so-rules);
+}
+
+.rulesJoined {
+  composes: rules;
+  background: var(--so-rules-joined);
+}
+
+/* About to leave: hollow first, filled shortly before departure. */
+.dot {
+  position: absolute;
+  left: 20px;
+  top: 27px;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 3px solid var(--so-ink);
+  border-radius: 50%;
+}
+
+.dot[data-filled='true'] {
+  background: var(--so-ink);
+}
+
+.dot[data-lit='false'] {
+  visibility: hidden;
+}
+
+.planned {
+  composes: field cap34;
+  left: 54px;
+  top: 0;
+  width: 130px;
+  height: 73px;
+}
+
+.expected {
+  composes: field inverted cap26;
+  left: 190px;
+  top: 14px;
+  width: 116px;
+  height: 46px;
+  justify-content: center;
+  text-align: center;
+}
+
+/* The pictogram of the train's kind, between the times and the train. */
+.service {
+  position: absolute;
+  left: 316px;
+  top: 13px;
+  display: flex;
+  font-size: 48px;
+}
+
+/* Joins the two parts of a coupled train, from the middle of one line to that of the next. */
+.bracket {
+  position: absolute;
+  left: 376px;
+  top: 22px;
+  width: 3px;
+  height: 105px;
+  background: var(--so-ink);
+}
+
+.train {
+  composes: field cap26;
+  left: 390px;
+  top: 0;
+  width: 190px;
+  height: 73px;
+}
+
+/*
+ * The train's name in a box that says what kind of train it is: long-distance inverted,
+ * regional on grey-blue, the S-Bahn on its own colour with round ends.
+ */
+.trainTag {
+  display: inline-block;
+  height: 46px;
+  padding: 0 10px;
+  line-height: 46px;
+  background: var(--so-regional);
+}
+
+.trainTag[data-service='longDistance'] {
+  background: var(--so-ink);
+  color: var(--so-lit);
+}
+
+.trainTag[data-service='suburban'] {
+  padding: 0 18px;
+  border-radius: 23px;
+  background: var(--so-suburban);
+}
+
+.via {
+  composes: field cap26;
+  left: 600px;
+  top: 0;
+  width: 550px;
+  height: 73px;
+}
+
+/* Takes the place of the via stops, inverted, and runs when it is too long. */
+.notice {
+  composes: field inverted cap26;
+  left: 600px;
+  top: 14px;
+  width: 550px;
+  height: 46px;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.destination {
+  composes: field cap34;
+  left: 1170px;
+  top: 0;
+  width: 470px;
+  height: 73px;
+}
+
+.platform {
+  composes: field cap34;
+  left: 1660px;
+  top: 0;
+  width: 240px;
+  height: 73px;
+}
+
+.platform > * {
+  flex: none;
+}
+
+.platformLabel {
+  min-width: 160px;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.platformLabel[data-inverted='true'] {
+  background: var(--so-ink);
+  color: var(--so-lit);
+}
+
+/* The split stands in the line like a letter, at cap height. */
+.letterPictogram > svg {
+  width: auto;
+  height: 0.711em;
+  vertical-align: baseline;
+}
+
+/* A notice about the data, across the full width in place of the last line. */
+.banner {
+  composes: field inverted cap30;
+  left: 0;
+  top: 1005px;
+  width: 1920px;
+  height: 75px;
+  padding: 0 20px;
+  box-sizing: border-box;
+}

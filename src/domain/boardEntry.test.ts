@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { delayMinutes, isDelayed } from './boardEntry';
+import { delayMinutes, isDelayed, sortByPlannedTime, sortByTime } from './boardEntry';
+import type { BoardEntry } from './boardEntry';
 
 const at = (isoPlanned: string, isoExpected: string) => ({
   planned: new Date(isoPlanned),
@@ -33,5 +34,34 @@ describe('delay derived from the two timestamps', () => {
 
   it('handles a delay across midnight', () => {
     expect(delayMinutes(at('2026-09-10T23:55:00Z', '2026-09-11T00:10:00Z'))).toBe(15);
+  });
+});
+
+describe('board order', () => {
+  const entry = (id: string, planned: string, expected: string): BoardEntry => ({
+    kind: 'terminatingArrival',
+    id,
+    train: { category: 'RB', number: id },
+    platform: { changed: false },
+    time: at(planned, expected),
+    status: 'onTime',
+    messages: [],
+    origin: { name: 'Dieburg' },
+  });
+
+  const late = entry('late', '2026-09-10T08:00:00Z', '2026-09-10T08:30:00Z');
+  const next = entry('next', '2026-09-10T08:10:00Z', '2026-09-10T08:10:00Z');
+  const alongside = entry('alongside', '2026-09-10T08:10:00Z', '2026-09-10T08:12:00Z');
+
+  it('follows the expected time for what leaves next', () => {
+    expect(sortByTime([late, next]).map((e) => e.id)).toEqual(['next', 'late']);
+  });
+
+  it('keeps a delayed train in its timetable place, and ties in the order given', () => {
+    expect(sortByPlannedTime([alongside, late, next]).map((e) => e.id)).toEqual([
+      'late',
+      'alongside',
+      'next',
+    ]);
   });
 });

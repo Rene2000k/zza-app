@@ -1,3 +1,4 @@
+import { sortByPlannedTime } from '@/domain/boardEntry';
 import type { DepartureEntry, EntryTime, TerminatingArrivalEntry } from '@/domain/boardEntry';
 import type { StationRef } from '@/domain/station';
 import type { ReadyBoard, ZzaBoardViewModel } from '@/hooks/useZzaBoard';
@@ -38,18 +39,25 @@ const departure = (overrides: Partial<DepartureEntry> & { id: string }): Departu
   ...overrides,
 });
 
-const ready = (overrides: Partial<ReadyBoard>): ReadyBoard => ({
-  state: 'ready',
-  station,
-  platform: '9',
-  current: undefined,
-  secondPart: undefined,
-  following: [],
-  messages: [],
-  dataAgeSeconds: 4,
-  stale: false,
-  ...overrides,
-});
+/** The whole board in time order is derived from the slots, so the two cannot disagree. */
+const ready = (overrides: Partial<ReadyBoard>): ReadyBoard => {
+  const { current, secondPart, following = [] } = overrides;
+  const listed = [current, secondPart, ...following].filter((entry) => entry !== undefined);
+  return {
+    state: 'ready',
+    station,
+    platform: '9',
+    current: undefined,
+    secondPart: undefined,
+    following: [],
+    entries: sortByPlannedTime(listed),
+    now: reference,
+    messages: [],
+    dataAgeSeconds: 4,
+    stale: false,
+    ...overrides,
+  };
+};
 
 const ice: DepartureEntry = departure({ id: 'ice-571' });
 
@@ -215,6 +223,40 @@ const longName: DepartureEntry = departure({
   ],
 });
 
+const onPlatform = <T extends DepartureEntry>(entry: T, platform: string): T => ({
+  ...entry,
+  platform: { planned: platform, actual: platform, changed: false },
+});
+
+/** Leaves in two minutes — close enough for a station display to mark it as about to go. */
+const sBahn: DepartureEntry = departure({
+  id: 's-35862',
+  train: { category: 'S', number: '35862', line: 'S8' },
+  platform: { planned: '103', actual: '103', changed: false },
+  time: at(2),
+  destination: { name: 'Wiesbaden Hbf' },
+  via: [{ name: 'Frankfurt(Main)Taunusanlage' }, { name: 'Frankfurt-Niederrad' }],
+});
+
+/** Every train of the station, as a station-wide display lists them. */
+const wholeStation = ready({
+  platform: undefined,
+  current: sBahn,
+  following: [
+    ice,
+    diverted,
+    onPlatform(toKassel, '13'),
+    onPlatform(toSiegen, '13'),
+    movedAway,
+    terminating,
+    onPlatform(regional, '12'),
+    onPlatform(turnsShort, '21'),
+    cancelled,
+    onPlatform(replacement, '20'),
+    longName,
+  ],
+});
+
 export const previewScenarios: readonly PreviewScenario[] = [
   {
     id: 'regelbetrieb',
@@ -291,6 +333,7 @@ export const previewScenarios: readonly PreviewScenario[] = [
     name: 'Daten veraltet',
     board: ready({ current: ice, following: [regional], dataAgeSeconds: 184, stale: true }),
   },
+  { id: 'bahnhof', name: 'Ganzer Bahnhof', board: wholeStation },
   { id: 'laden', name: 'Erster Abruf läuft', board: { state: 'loading' } },
   { id: 'keine-daten', name: 'Quelle antwortet nicht', board: { state: 'unavailable' } },
 ];

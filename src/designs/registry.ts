@@ -1,5 +1,7 @@
 import { debugDesign } from './debug';
+import { stationOverviewDesign } from './station-overview';
 import { v3_5x2Design } from './v3-5x2';
+import { v4_5x2Design } from './v4-5x2';
 import type { ZzaDesign } from './types';
 
 /**
@@ -9,7 +11,12 @@ import type { ZzaDesign } from './types';
  * configuration and never imports one directly, so adding a design means adding an entry
  * here and touching nothing else.
  */
-const designs: readonly ZzaDesign[] = [debugDesign, v3_5x2Design];
+const designs: readonly ZzaDesign[] = [
+  debugDesign,
+  v3_5x2Design,
+  v4_5x2Design,
+  stationOverviewDesign,
+];
 
 export const designIds = (): string[] => designs.map((design) => design.id);
 

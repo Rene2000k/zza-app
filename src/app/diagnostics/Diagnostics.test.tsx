@@ -89,6 +89,8 @@ describe('diagnostics view', () => {
       current: undefined,
       secondPart: undefined,
       following: [],
+      entries: [],
+      now: new Date('2026-09-11T10:00:00+02:00'),
       messages: [],
       dataAgeSeconds: 42,
       stale: false,

@@ -19,3 +19,42 @@ export interface TrainRef {
 /** "ICE 571" — the plainest rendering, for fallbacks and debug views. */
 export const formatTrainRef = (train: TrainRef): string =>
   `${train.category} ${train.number}`.trim();
+
+/**
+ * The kind of service a train belongs to, as far as a display tells them apart: long-distance,
+ * regional, or a suburban S-Bahn.
+ */
+export type ServiceClass = 'longDistance' | 'regional' | 'suburban';
+
+/** Categories of long-distance trains, domestic and international, as the sources print them. */
+const LONG_DISTANCE: ReadonlySet<string> = new Set([
+  'ICE',
+  'IC',
+  'EC',
+  'ECE',
+  'EN',
+  'NJ',
+  'RJ',
+  'RJX',
+  'FLX',
+  'TGV',
+  'ES',
+  'EST',
+  'WB',
+  'D',
+  'GV',
+]);
+
+/**
+ * "S5", "S 8": the line label of an S-Bahn. Needed beside the category, because operators run
+ * S-Bahns under categories of their own — IRIS gives the Hanover S5 as "SBH". A digit must
+ * follow, so a "SE" line is not taken for one.
+ */
+const S_BAHN_LINE = /^S\s*\d/i;
+
+/** Derived from the category and the line label; anything else counts as regional. */
+export const serviceClass = (train: TrainRef): ServiceClass => {
+  const category = train.category.trim().toUpperCase();
+  if (category === 'S' || S_BAHN_LINE.test(train.line?.trim() ?? '')) return 'suburban';
+  return LONG_DISTANCE.has(category) ? 'longDistance' : 'regional';
+};
