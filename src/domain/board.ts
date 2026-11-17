@@ -66,9 +66,12 @@ export const entriesForPlatform = (
 
 /**
  * True for an entry that was moved off `platform` to another one: it no longer leaves from
- * here, but a platform display keeps pointing to where it went (ADR-0006).
+ * here, but a platform display keeps pointing to where it went (ADR-0006). Without a platform —
+ * a station-wide display — every platform change counts, since there is no "here" to stay at.
+ * The one definition behind both the view model's slot assignment and the announced platform,
+ * so the two can never disagree.
  */
-export const changedAwayFrom = (entry: BoardEntry, platform: string): boolean =>
+export const changedAwayFrom = (entry: BoardEntry, platform: string | undefined): boolean =>
   entry.platform.changed &&
   entry.platform.actual !== undefined &&
   !isSamePlatform(entry.platform.actual, platform);

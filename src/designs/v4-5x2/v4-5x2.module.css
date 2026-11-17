@@ -66,7 +66,7 @@
 
 /* Upper module row — the band at the top: a train's running line, or a notice for all. */
 
-.mainHint {
+.mainRunningLine {
   composes: field ruled cap23;
   left: 344px;
   top: 0;
@@ -215,7 +215,7 @@
   padding-left: 3px;
 }
 
-.secondHint {
+.secondRunningLine {
   composes: field ruled cap23;
   left: 344px;
   top: 193px;

@@ -18,15 +18,12 @@ describe('formatClockTime', () => {
 });
 
 describe('formatDelay', () => {
-  it('prints whole minutes late', () => {
-    expect(formatDelay(time(7))).toBe('+7');
+  it('prints the minutes late', () => {
+    expect(formatDelay(7)).toBe('+7');
   });
 
-  it('says nothing for a train on time, early, or under a minute late', () => {
-    expect(formatDelay(time(0))).toBeUndefined();
-    expect(formatDelay(time(-3))).toBeUndefined();
-    expect(
-      formatDelay({ planned, expected: new Date(planned.getTime() + 50_000) }),
-    ).toBeUndefined();
+  it('says nothing for a train on time or early', () => {
+    expect(formatDelay(0)).toBeUndefined();
+    expect(formatDelay(-3)).toBeUndefined();
   });
 });

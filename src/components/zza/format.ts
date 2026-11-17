@@ -1,6 +1,3 @@
-import { delayMinutes } from '@/domain/boardEntry';
-import type { EntryTime } from '@/domain/boardEntry';
-
 /**
  * The facts a display field can print — never the choice of which one to print.
  *
@@ -24,12 +21,12 @@ const clockTimeFormat = new Intl.DateTimeFormat('de-DE', {
 export const formatClockTime = (instant: Date): string => clockTimeFormat.format(instant);
 
 /**
- * "+7", or undefined for a train on time, early, or less than a full minute late.
+ * "+7" for whole minutes late, or undefined for a train on time or early. It takes minutes,
+ * not times, so a design decides which delay it states — `delayMinutes` of the times, or
+ * `announcedDelayMinutes`, which a cancelled train sets to none.
  *
  * Undefined rather than an empty string: a field with nothing to say stays empty, and a
  * design can tell that apart from a text it has to draw.
  */
-export const formatDelay = (time: EntryTime): string | undefined => {
-  const minutes = delayMinutes(time);
-  return minutes > 0 ? `+${minutes}` : undefined;
-};
+export const formatDelay = (minutes: number): string | undefined =>
+  minutes > 0 ? `+${minutes}` : undefined;

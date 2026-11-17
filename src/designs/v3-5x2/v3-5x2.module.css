@@ -111,7 +111,7 @@
 
 /* Upper module row — modules 2 to 4: running line, via stops, destination. */
 
-.mainHint {
+.mainRunningLine {
   composes: field invertible cap10;
   left: 255px;
   top: 0;
@@ -211,7 +211,7 @@
   height: 72px;
 }
 
-.followingHint {
+.followingRunningLine {
   composes: field invertible cap10;
   left: 1020px;
   top: 12px;

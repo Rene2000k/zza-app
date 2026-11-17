@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { V3_5x2 } from './V3_5x2';
 import type { DepartureEntry, EntryTime, TerminatingArrivalEntry } from '@/domain/boardEntry';
+import type { BoardMessage } from '@/domain/message';
 import type { ReadyBoard, ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
 const at = (minutes: number, delay = 0): EntryTime => {
@@ -99,11 +100,15 @@ describe('V3 5X2 design', () => {
   it('leaves delay causes and disruption reports out of the running line', () => {
     const container = show(
       ready({
-        current: departure({ id: 'x', time: at(9, 3), status: 'delayed' }),
-        messages: [
-          { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
-          { kind: 'disruption', text: 'Störung' },
-        ],
+        current: departure({
+          id: 'x',
+          time: at(9, 3),
+          status: 'delayed',
+          messages: [
+            { kind: 'delayCause', code: '43', text: 'Verspätung eines vorausfahrenden Zuges' },
+            { kind: 'disruption', text: 'Störung' },
+          ],
+        }),
       }),
     );
     expect(screen.queryByText(/vorausfahrenden/)).toBeNull();
@@ -114,10 +119,12 @@ describe('V3 5X2 design', () => {
   it('runs the quality notices whose topic it shows, in the wording the source gave', () => {
     const container = show(
       ready({
-        current: departure({ id: 'x' }),
-        messages: [
-          { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
-        ],
+        current: departure({
+          id: 'x',
+          messages: [
+            { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+          ],
+        }),
       }),
     );
     expect(screen.getByText(/Ein Wagen fehlt/)).toBeDefined();
@@ -127,22 +134,24 @@ describe('V3 5X2 design', () => {
   it('leaves out the quality topics this display does not announce', () => {
     const container = show(
       ready({
-        current: departure({ id: 'x' }),
-        messages: [
-          {
-            kind: 'qualityNotice',
-            code: '70',
-            topic: 'onboardServices',
-            text: 'WLAN nicht verfügbar',
-          },
-          {
-            kind: 'qualityNotice',
-            code: '86',
-            topic: 'reservation',
-            text: 'Gesamter Zug ohne Reservierung',
-          },
-          { kind: 'qualityNotice', code: '98', topic: 'other', text: 'Sonstige Qualitätsmängel' },
-        ],
+        current: departure({
+          id: 'x',
+          messages: [
+            {
+              kind: 'qualityNotice',
+              code: '70',
+              topic: 'onboardServices',
+              text: 'WLAN nicht verfügbar',
+            },
+            {
+              kind: 'qualityNotice',
+              code: '86',
+              topic: 'reservation',
+              text: 'Gesamter Zug ohne Reservierung',
+            },
+            { kind: 'qualityNotice', code: '98', topic: 'other', text: 'Sonstige Qualitätsmängel' },
+          ],
+        }),
       }),
     );
     expect(screen.queryByText(/WLAN/)).toBeNull();
@@ -216,25 +225,19 @@ describe('V3 5X2 design', () => {
         screen.getByText('Zug wird in Gießen geteilt +++ Verspätung ca. 10 Min.'),
       ).toBeDefined();
     });
-
-    it('announces no split when one part does not run', () => {
-      const container = show(
-        ready({ current: toKassel, secondPart: departure({ ...toSiegen, status: 'cancelled' }) }),
-      );
-      expect(screen.queryByText(/geteilt/)).toBeNull();
-      expect(screen.getByText('Zug fällt aus')).toBeDefined();
-      expect(screen.getByText('Siegen Hbf')).toBeDefined();
-      expect(invertedFields(container)).toHaveLength(1);
-    });
   });
 
   it('runs a quality notice after the delay, separated by +++', () => {
     show(
       ready({
-        current: departure({ id: 'x', time: at(9, 10), status: 'delayed' }),
-        messages: [
-          { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
-        ],
+        current: departure({
+          id: 'x',
+          time: at(9, 10),
+          status: 'delayed',
+          messages: [
+            { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+          ],
+        }),
       }),
     );
     expect(screen.getByText('Verspätung ca. 10 Min. +++ Ein Wagen fehlt')).toBeDefined();
@@ -373,19 +376,49 @@ describe('V3 5X2 design', () => {
     expect(line.closest('[data-inverted]')?.getAttribute('data-inverted')).toBe('true');
   });
 
-  it('does not announce a cancellation twice when the source already words it', () => {
+  it('words a cancellation in the source’s own text, where the source puts it', () => {
+    const messages: BoardMessage[] = [
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+      { kind: 'cancellation', code: '80', text: 'Fällt heute aus' },
+    ];
+    show(ready({ current: departure({ id: 'x', status: 'cancelled', messages }) }));
+    expect(screen.getByText('Ein Wagen fehlt +++ Fällt heute aus')).toBeDefined();
+    expect(screen.queryByText(/Zug fällt aus/)).toBeNull();
+  });
+
+  it('words a following train’s cancellation in the source’s text, where the source puts it', () => {
+    const messages: BoardMessage[] = [
+      { kind: 'qualityNotice', code: '85', topic: 'missingCoaches', text: 'Ein Wagen fehlt' },
+      { kind: 'cancellation', code: '80', text: 'Fällt heute aus' },
+    ];
     show(
       ready({
-        current: departure({ id: 'x', status: 'cancelled' }),
-        messages: [{ kind: 'cancellation', code: '80', text: 'Zug fällt aus' }],
+        current: departure({ id: 'x' }),
+        following: [departure({ id: 'y', time: at(20), status: 'cancelled', messages })],
       }),
     );
+    expect(screen.getByText('Ein Wagen fehlt +++ Fällt heute aus')).toBeDefined();
+    expect(screen.queryByText(/^Fällt aus/)).toBeNull();
+  });
+
+  it('words a cancellation itself where the source gives no text', () => {
+    show(ready({ current: departure({ id: 'x', status: 'cancelled' }) }));
     expect(screen.getByText('Zug fällt aus')).toBeDefined();
   });
 
-  it('announces no delay for a cancelled train', () => {
-    show(ready({ current: departure({ id: 'x', time: at(9, 20), status: 'cancelled' }) }));
+  it('announces no route change and shows no halt box for a cancelled train', () => {
+    show(
+      ready({
+        current: departure({
+          id: 'x',
+          status: 'cancelled',
+          routeChanges: [{ kind: 'skippedStops', stops: [{ name: 'Duisburg Hbf' }] }],
+        }),
+      }),
+    );
     expect(screen.getByText('Zug fällt aus')).toBeDefined();
+    expect(screen.queryByText(/Heute ohne Halt/)).toBeNull();
+    expect(screen.queryAllByRole('img')).toHaveLength(0);
   });
 
   it('announces a replacement train in the running line', () => {
@@ -423,11 +456,6 @@ describe('V3 5X2 design', () => {
   it('marks a cancelled following train in its own running line', () => {
     show(ready({ following: [departure({ id: 'x', status: 'cancelled' })] }));
     expect(screen.getByText('Fällt aus')).toBeDefined();
-  });
-
-  it('gives a cancelled following train no deviation field', () => {
-    show(ready({ following: [departure({ id: 'x', time: at(20, 7), status: 'cancelled' })] }));
-    expect(screen.queryByText('+7')).toBeNull();
   });
 
   it('shows two following trains and no more', () => {

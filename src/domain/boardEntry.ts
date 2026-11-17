@@ -78,6 +78,14 @@ export const delayMinutes = (time: EntryTime): number => {
 /** True when the entry runs later than planned by at least a full minute. */
 export const isDelayed = (time: EntryTime): boolean => delayMinutes(time) > 0;
 
+/**
+ * The delay a display announces for an entry: none for a cancelled train, which a source may
+ * still list with an expected time, but which has no departure that could be late. How the
+ * minutes are rounded or shown stays the design's choice.
+ */
+export const announcedDelayMinutes = (entry: BoardEntry): number =>
+  entry.status === 'cancelled' ? 0 : delayMinutes(entry.time);
+
 export interface PlatformInfo {
   /** Platform from the timetable. Undefined when the source does not say. */
   readonly planned?: string;

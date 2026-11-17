@@ -572,6 +572,14 @@ describe('mapBoardEntries: route changes', () => {
     expect(entry?.destination.name).toBe('Gelnhausen');
   });
 
+  it('carries a cancellation by status alone when the source sends no message for it', () => {
+    // The wording of a cancellation belongs to the design; the provider must not invent one.
+    const fchg = changesWith('<dp cpth="" cs="c" clt="2609220203"/>');
+    const entry = asDeparture(mapBoardEntries([planDoc], fchg)[0]);
+    expect(entry?.status).toBe('cancelled');
+    expect(entry?.messages).toEqual([]);
+  });
+
   it('reports no route change when the source sent no changed path at all', () => {
     const fchg = changesWith('<dp ct="2609231105"/>');
     const entry = asDeparture(mapBoardEntries([planDoc], fchg)[0]);

@@ -78,3 +78,35 @@ export type BoardMessage = PlainMessage | QualityMessage;
 /** Messages worth showing: those the project could turn into text. */
 export const displayableMessages = (messages: readonly BoardMessage[]): BoardMessage[] =>
   messages.filter((message) => message.text !== undefined && message.text.trim() !== '');
+
+/**
+ * Displayable messages, each text said once. The same text often arrives twice — once from
+ * the stop, once from the movement — and a line that says it twice looks broken, so the first
+ * occurrence wins.
+ */
+export const uniqueMessages = (messages: readonly BoardMessage[]): BoardMessage[] => {
+  const seen = new Set<string>();
+  return displayableMessages(messages).filter((message) => {
+    const text = message.text ?? '';
+    if (seen.has(text)) return false;
+    seen.add(text);
+    return true;
+  });
+};
+
+/**
+ * The quality topics that belong on a platform display (ADR-0011): what a traveller on the
+ * platform can still act on — where to stand, whether the bicycle comes along, whether to
+ * expect a seat, whether a bus runs instead. Left out: WLAN and on-board entertainment,
+ * reservations, and the source's own "sonstige Qualitätsmängel", which says nothing useful
+ * without a subject. A design decides only whether it shows quality messages, not which.
+ */
+export const PLATFORM_QUALITY_TOPICS: ReadonlySet<QualityTopic> = new Set<QualityTopic>([
+  'coachOrder',
+  'missingCoaches',
+  'bicycle',
+  'catering',
+  'accessibility',
+  'occupancy',
+  'busReplacement',
+]);

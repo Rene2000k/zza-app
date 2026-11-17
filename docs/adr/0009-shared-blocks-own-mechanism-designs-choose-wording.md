@@ -62,8 +62,8 @@ Recommended: **O02**, as the rule
 > (`selectViaStops`, `headlineStation`, `delayMinutes`, `displayableMessages`, `isSamePlatform`).
 
 Under this rule the delay field is not a shared component at all: one design renders
-`formatDelay(time)`, another renders `formatClockTime(time.expected)`, and neither has to know the
-other exists. What stays shared is the rule that "on time", "early" and "less than a minute late"
+`formatDelay(delayMinutes(time))`, another renders `formatClockTime(time.expected)`, and neither has
+to know the other exists. What stays shared is the rule that "on time", "early" and "less than a minute late"
 all print nothing.
 
 **Trade-off accepted: D03.** A new design writes more of its own markup — a span and a class per
