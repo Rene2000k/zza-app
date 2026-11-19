@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { designIds, findDesign } from '@/designs/registry';
-import { providerIds } from '@/providers/registry';
+import { providerIds } from '@/providers/departureRegistry';
 
 /**
  * One display instance, described completely.
@@ -16,7 +16,7 @@ export const displayConfigSchema = z.object({
   platform: z.string().min(1).optional(),
   /** Design id from the design registry. */
   design: z.string().min(1).default('debug'),
-  /** Provider id from the provider registry. */
+  /** Provider id from the departure registry. */
   provider: z.string().min(1).default('mock'),
   /** Poll interval in seconds. Lower bound keeps the source treated politely. */
   refreshSeconds: z.coerce.number().int().min(10).max(600).default(30),

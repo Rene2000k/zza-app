@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { designIds } from '@/designs/registry';
-import { providerIds } from '@/providers/registry';
+import { providerIds } from '@/providers/departureRegistry';
 import { displayConfigSchema, parseConfig, toSearch } from '../config';
 import { ConfigFields } from './ConfigFields';
 import { fieldParams } from './configFieldValues';

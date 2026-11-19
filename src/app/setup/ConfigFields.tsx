@@ -1,6 +1,6 @@
 import { designIds, findDesign } from '@/designs/registry';
 import { useStationLookup } from '@/hooks/useStationLookup';
-import { createProvider, providerIds } from '@/providers/registry';
+import { createProvider, providerIds } from '@/providers/departureRegistry';
 import styles from './ConfigFields.module.css';
 import type { ConfigFieldValues } from './configFieldValues';
 import type { StationLookup } from '@/hooks/useStationLookup';
