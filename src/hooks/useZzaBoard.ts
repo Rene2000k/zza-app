@@ -2,7 +2,9 @@ import { changedAwayFrom, dataAgeSeconds, isStale, relevantEntries } from '@/dom
 import { sortByPlannedTime, sortByTime } from '@/domain/boardEntry';
 import { collapseCoupledParts, coupledPartners } from '@/domain/coupling';
 import { displayableMessages } from '@/domain/message';
+import { createFormationProvider } from '@/providers/formationRegistry';
 import { useBoard } from './useBoard';
+import { useFormations } from './useFormations';
 import { useNow } from './useClock';
 import type { BoardEntry } from '@/domain/boardEntry';
 import type { BoardMessage } from '@/domain/message';
@@ -78,7 +80,13 @@ const UNAVAILABLE: UnavailableBoard = { state: 'unavailable' };
  */
 export const useZzaBoard = (config: DisplayConfig): ZzaBoardViewModel => {
   const now = useNow();
-  const { board, isLoading, staleAfterSeconds } = useBoard(config);
+  const polled = useBoard(config);
+  const { isLoading, staleAfterSeconds } = polled;
+  const board = useFormations(
+    createFormationProvider(config.formationProvider),
+    polled.board,
+    config.refreshSeconds,
+  );
 
   if (isLoading) return LOADING;
   if (board === undefined) return UNAVAILABLE;

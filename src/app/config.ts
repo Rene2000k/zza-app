@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { designIds, findDesign } from '@/designs/registry';
-import { providerIds } from '@/providers/registry';
+import { formationProviderIds } from '@/providers/formationRegistry';
+import { providerIds } from '@/providers/departureRegistry';
 
 /**
  * One display instance, described completely.
@@ -16,8 +17,14 @@ export const displayConfigSchema = z.object({
   platform: z.string().min(1).optional(),
   /** Design id from the design registry. */
   design: z.string().min(1).default('debug'),
-  /** Provider id from the provider registry. */
+  /** Provider id from the departure registry. */
   provider: z.string().min(1).default('mock'),
+  /**
+   * Wagenreihung provider id from the formation registry, chosen independently of the
+   * departure provider (ADR-0015). "none" — no Wagenreihungen — since no source currently
+   * delivers them.
+   */
+  formationProvider: z.string().min(1).default('none'),
   /** Poll interval in seconds. Lower bound keeps the source treated politely. */
   refreshSeconds: z.coerce.number().int().min(10).max(600).default(30),
   /** How far ahead the board looks, in minutes. */
@@ -52,6 +59,7 @@ const problemByKey: Record<ConfigKey, string> = {
   platform: 'Gleis (platform): darf nicht leer sein — für alle Gleise den Parameter weglassen',
   design: 'Design (design): fehlt',
   provider: 'Datenquelle (provider): fehlt',
+  formationProvider: 'Wagenreihung (formationProvider): fehlt',
   refreshSeconds: 'Abrufintervall (refreshSeconds): ganze Zahl von 10 bis 600 Sekunden',
   horizonMinutes: 'Vorschau (horizonMinutes): ganze Zahl von 5 bis 360 Minuten',
   simulatedTime:
@@ -91,6 +99,11 @@ export const parseConfig = (search: string): ConfigResult => {
   if (!providerIds().includes(parsed.data.provider)) {
     problems.push(
       `Datenquelle (provider): „${parsed.data.provider}“ gibt es nicht, verfügbar: ${providerIds().join(', ')}`,
+    );
+  }
+  if (!formationProviderIds().includes(parsed.data.formationProvider)) {
+    problems.push(
+      `Wagenreihung (formationProvider): „${parsed.data.formationProvider}“ gibt es nicht, verfügbar: ${formationProviderIds().join(', ')}`,
     );
   }
   return problems.length > 0 ? { ok: false, problems } : { ok: true, config: parsed.data };

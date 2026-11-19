@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { createProvider } from '@/providers/registry';
+import { createProvider } from '@/providers/departureRegistry';
 import type { StationDetails } from '@/domain/station';
 
 const EVA_NUMBER = /^\d{7,8}$/;

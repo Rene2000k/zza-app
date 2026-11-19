@@ -81,7 +81,6 @@ export const createIrisProvider = (): DepartureProvider => {
       viaStops: true,
       delayCauses: 'codes',
       cancellations: true,
-      formations: false,
       stationPlatformList: true,
     },
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { createProvider } from '@/providers/registry';
+import { createProvider } from '@/providers/departureRegistry';
 import { useClock } from './useClock';
 import type { DisplayConfig } from '@/app/config';
 import type { StationBoard } from '@/domain/board';

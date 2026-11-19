@@ -55,6 +55,21 @@ describe('display configuration', () => {
     expect(result.problems.join(' ')).toContain('iris');
   });
 
+  it('takes Wagenreihungen from no source unless told otherwise', () => {
+    const result = parseConfig('?station=8000105&provider=iris');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.config.formationProvider).toBe('none');
+  });
+
+  it('rejects an unknown Wagenreihung provider and names the available ones', () => {
+    const result = parseConfig('?station=8000105&formationProvider=fernbahn');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems.join(' ')).toContain('„fernbahn“ gibt es nicht');
+    expect(result.problems.join(' ')).toContain('none');
+  });
+
   it('round-trips through a share link', () => {
     const parsed = parseConfig('?station=8000105&platform=1a&refreshSeconds=45');
     expect(parsed.ok).toBe(true);

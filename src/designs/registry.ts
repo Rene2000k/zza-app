@@ -7,7 +7,7 @@ import type { ZzaDesign } from './types';
 /**
  * Design lookup by id.
  *
- * The counterpart of the provider registry: the app shell picks a design from the
+ * The counterpart of the departure registry: the app shell picks a design from the
  * configuration and never imports one directly, so adding a design means adding an entry
  * here and touching nothing else.
  */
