@@ -11,7 +11,7 @@ import { mockEntries, mockStations } from './fixtures';
  * Exists so the display, the components and the designs can be built and reviewed
  * without a network and without waiting for a real cancellation to occur. It reports
  * capabilities honestly, so a design cannot accidentally rely on it for something the
- * real source lacks — except formations, which no source currently provides.
+ * real source lacks.
  */
 export const createMockProvider = (): DepartureProvider => ({
   id: 'mock',
@@ -23,7 +23,6 @@ export const createMockProvider = (): DepartureProvider => ({
     viaStops: true,
     delayCauses: 'codes',
     cancellations: true,
-    formations: false,
     stationPlatformList: true,
   },
 

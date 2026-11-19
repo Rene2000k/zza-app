@@ -35,8 +35,4 @@ describe('mock provider', () => {
     expect(await provider.resolveStation('FF')).toHaveLength(1);
     expect(await provider.resolveStation('Nirgendwo')).toHaveLength(0);
   });
-
-  it('does not claim formation support it has no data for', () => {
-    expect(createMockProvider().capabilities.formations).toBe(false);
-  });
 });

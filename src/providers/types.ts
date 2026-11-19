@@ -18,9 +18,6 @@ export interface DepartureProvider {
 
   /** The board for one station, optionally filtered to a single platform. */
   getBoard(request: BoardRequest, signal?: AbortSignal): Promise<StationBoard>;
-
-  /** Coach sequence for one train, where the source has it. */
-  getFormation?(request: FormationRequest, signal?: AbortSignal): Promise<TrainFormation | null>;
 }
 
 export interface BoardRequest {
@@ -34,10 +31,38 @@ export interface BoardRequest {
   readonly horizonMinutes?: number;
 }
 
+/**
+ * Where Wagenreihungen come from — a port of its own, configured independently of the
+ * departure provider (ADR-0015). It knows nothing about departures: it is asked about one
+ * train at a time and answers with its Wagenreihung, or `null` when it has none, which is
+ * the normal case rather than an error.
+ */
+export interface FormationProvider {
+  readonly id: string;
+  /** Human-readable name for diagnostics and the configuration UI. */
+  readonly name: string;
+
+  getFormation(request: FormationRequest, signal?: AbortSignal): Promise<TrainFormation | null>;
+}
+
+/**
+ * One departure, described well enough for a source to find its Wagenreihung. A train number
+ * can run in several variants by period and starting station, so the request carries the
+ * route as well as the number and the date.
+ *
+ * Stations are given by name: departure sources commonly report routes without EVA numbers,
+ * so a name is what every stop can be matched by.
+ */
 export interface FormationRequest {
   readonly train: { readonly category: string; readonly number: string };
-  readonly station: string;
+  /** Planned departure from the current station. */
   readonly plannedDeparture: Date;
+  /** Name of the station the train departs from. */
+  readonly station: string;
+  /** Name of the station the train started from, when known. */
+  readonly origin?: string;
+  /** Names of all remaining stops after the current station, in travel order, destination last. */
+  readonly route: readonly string[];
 }
 
 /**
@@ -58,7 +83,6 @@ export interface ProviderCapabilities {
   /** Reports delay causes — as codes, as text, or not at all. */
   readonly delayCauses: 'none' | 'codes' | 'text';
   readonly cancellations: boolean;
-  readonly formations: boolean;
   /** Reports the platforms a station has, for the configuration UI. */
   readonly stationPlatformList: boolean;
 }
