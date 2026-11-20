@@ -151,8 +151,8 @@ const Departure = ({
 /** The real display leaves the area empty without a coach sequence, strip included. */
 const Formation = ({ entry }: { readonly entry: BoardEntry }) =>
   entry.formation === undefined ? null : (
-    <div className={styles.formation}>
-      <TrainFormationDisplay formation={entry.formation} />
+    <div className={styles.formationField}>
+      <TrainFormationDisplay formation={entry.formation} coachLabel="number" />
     </div>
   );
 
