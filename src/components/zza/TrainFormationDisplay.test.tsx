@@ -145,6 +145,41 @@ describe('TrainFormationDisplay', () => {
     ]);
   });
 
+  it('turns a part-first-class coach’s first-class half towards the adjoining first class', () => {
+    const { container } = render(
+      <TrainFormationDisplay
+        formation={{
+          coaches: [
+            coach('1', 'A', { travelClass: 'first' }),
+            coach('2', 'A', { travelClass: 'mixed' }),
+            coach('3', 'B'),
+            coach('4', 'B', { travelClass: 'mixed' }),
+            coach('5', 'C', { travelClass: 'first', features: ['dining'] }),
+            coach('6', 'C', { travelClass: 'first' }),
+            coach('7', 'D', { travelClass: 'mixed' }),
+            coach('8', 'D'),
+          ],
+          accuracy: 'scheduled',
+        }}
+      />,
+    );
+    expect(
+      coaches(container).map((element) => element.getAttribute('data-first-class-side')),
+    ).toEqual([null, 'start', null, 'end', 'end', null, 'start', null]);
+  });
+
+  it('states no side for a mixed coach without first class next to it', () => {
+    const { container } = render(
+      <TrainFormationDisplay
+        formation={{
+          coaches: [coach('1', 'A'), coach('2', 'A', { travelClass: 'mixed' }), coach('3', 'B')],
+          accuracy: 'scheduled',
+        }}
+      />,
+    );
+    expect(coaches(container)[1]?.getAttribute('data-first-class-side')).toBeNull();
+  });
+
   it('draws coaches without a Bahnsteigabschnitt as a strip without a ruler', () => {
     const { container } = render(
       <TrainFormationDisplay

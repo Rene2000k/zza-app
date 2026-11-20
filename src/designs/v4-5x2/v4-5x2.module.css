@@ -209,7 +209,8 @@
 
 /*
  * First class is filled. A coach of first class and something else — second class, or a
- * restaurant — is filled on its first-class half, the right one, and keeps its label on the left.
+ * restaurant — is filled on its first-class half and keeps its label on the other. That half is
+ * the right one unless the block says the adjoining first class is at the start (the left).
  */
 .formationField [data-class='first'] {
   --zza-formation-edge: var(--v4-ink);
@@ -226,6 +227,14 @@
   /* Over the whole box, border included — tiled from inside it, the fill shows a seam. */
   background: linear-gradient(90deg, transparent 50%, var(--v4-ink) 50%) border-box;
   color: var(--v4-ink);
+}
+
+.formationField [data-class='mixed'][data-first-class-side='start'],
+.formationField [data-class='first'][data-features~='dining'][data-first-class-side='start'] {
+  justify-content: flex-end;
+  padding-left: 0;
+  padding-right: 6px;
+  background: linear-gradient(90deg, var(--v4-ink) 50%, transparent 50%) border-box;
 }
 
 .rule {
