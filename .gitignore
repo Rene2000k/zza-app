@@ -5,6 +5,10 @@ docs/plan/
 # Reference screenshots of third-party displays, collected for design analysis.
 docs/reference/
 
+# Locally saved third-party data (e.g. the fernbahn.de Reihungsverzeichnis). Private collections,
+# not open data — read by the dev server on the local machine, never committed.
+local-data/
+
 # Dependencies
 node_modules/
 .pnp
