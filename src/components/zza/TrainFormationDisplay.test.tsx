@@ -122,6 +122,47 @@ describe('TrainFormationDisplay', () => {
     expect(locomotive?.textContent).toBe(' ');
   });
 
+  it('draws a power car like a control car, cut at the end it faces, without a label', () => {
+    const powerCar: Coach = {
+      travelClass: 'none',
+      section: 'A',
+      lengthMetres: 20.9,
+      features: ['powerCar'],
+    };
+    const { container } = render(
+      <TrainFormationDisplay
+        formation={{
+          coaches: [powerCar, coach('1', 'A'), coach('2', 'B'), { ...powerCar, section: 'B' }],
+          accuracy: 'scheduled',
+        }}
+      />,
+    );
+    const strip = coaches(container);
+    expect(strip.map((element) => element.getAttribute('data-shape'))).toEqual([
+      'cab-start',
+      null,
+      null,
+      'cab-end',
+    ]);
+    expect(strip.map((element) => element.textContent)).toEqual([' ', '2', '2', ' ']);
+  });
+
+  it('shows no label on a power car even where it has a number', () => {
+    const { container } = render(
+      <TrainFormationDisplay
+        coachLabel="number"
+        formation={{
+          coaches: [
+            coach('1', 'A', { travelClass: 'none', features: ['powerCar'] }),
+            coach('2', 'A'),
+          ],
+          accuracy: 'scheduled',
+        }}
+      />,
+    );
+    expect(coaches(container)[0]?.textContent).toBe(' ');
+  });
+
   it('marks each coach’s class and features for the design to draw', () => {
     const { container } = render(<TrainFormationDisplay formation={formation} />);
     expect(coaches(container).map((element) => element.getAttribute('data-class'))).toEqual([

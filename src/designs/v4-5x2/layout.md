@@ -60,8 +60,9 @@ A coach box there is 49 photo px wide with 4 px between boxes — 61 and 5 canva
 photograph's 1.25 canvas px per photo px. Second-class coaches are two rules, above and below the
 number; first class is filled, a coach of first class and a restaurant on its right half, with
 knife and fork on the left. A control car's cab end is cut from the top corner, 19 photo px
-(24 canvas px) in, down to about 70 % of the box height, and stands upright below that. A
-locomotive is a closed box without a label, slanted towards the middle of its height at both ends
+(24 canvas px) in, down to about 70 % of the box height, and stands upright below that. A power
+car (Triebkopf, as on ICE 1, ICE 2 and TGV) is drawn the same way, without a number (photograph
+of ICE 786 to Hamburg-Altona). A locomotive is a closed box without a label, slanted towards the middle of its height at both ends
 (photograph of RE 6 to Hamburg-Altona, slant about a fifth of the box height: 8 canvas px). The
 photograph also shows an arrow for the direction of travel left of the strip, not drawn yet.
 
