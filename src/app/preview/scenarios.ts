@@ -332,6 +332,25 @@ const iceWithPowerCars: DepartureEntry = departure({
   },
 });
 
+/** An invented double unit: two short sets coupled cab to cab in the middle of the train. */
+const iceDoubleUnit: DepartureEntry = departure({
+  id: 'ice-577-double-unit',
+  train: { category: 'ICE', number: '577' },
+  formation: {
+    accuracy: 'scheduled',
+    coaches: [
+      coach('21', 'first', 'A', ['controlCar']),
+      coach('22', 'mixed', 'A'),
+      coach('23', 'second', 'B'),
+      coach('24', 'second', 'B', ['controlCar']),
+      coach('31', 'first', 'C', ['controlCar']),
+      coach('32', 'mixed', 'C'),
+      coach('33', 'second', 'D'),
+      coach('34', 'second', 'D', ['controlCar']),
+    ],
+  },
+});
+
 export const previewScenarios: readonly PreviewScenario[] = [
   {
     id: 'regelbetrieb',
@@ -347,6 +366,11 @@ export const previewScenarios: readonly PreviewScenario[] = [
     id: 'wagenreihung-triebkoepfe',
     name: 'Wagenreihung mit Triebköpfen',
     board: ready({ current: iceWithPowerCars, following: [movedAway, cancelled] }),
+  },
+  {
+    id: 'wagenreihung-doppeltraktion',
+    name: 'Wagenreihung in Doppeltraktion',
+    board: ready({ current: iceDoubleUnit, following: [movedAway, cancelled] }),
   },
   {
     id: 'wagenreihung-lok',

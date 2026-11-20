@@ -147,6 +147,53 @@ describe('TrainFormationDisplay', () => {
     expect(strip.map((element) => element.textContent)).toEqual([' ', '2', '2', ' ']);
   });
 
+  const shapes = (...cars: readonly Coach[]) => {
+    const { container } = render(
+      <TrainFormationDisplay formation={{ coaches: cars, accuracy: 'scheduled' }} />,
+    );
+    return coaches(container).map((element) => element.getAttribute('data-shape'));
+  };
+  const controlCar = (number: string) => coach(number, 'A', { features: ['controlCar'] });
+  const powerCar = (number: string) =>
+    coach(number, 'A', { travelClass: 'none', features: ['powerCar'] });
+
+  it('turns the cabs at the coupling of a double unit towards each other', () => {
+    expect(
+      shapes(
+        controlCar('1'),
+        coach('2', 'A'),
+        controlCar('3'),
+        controlCar('4'),
+        coach('5', 'A'),
+        controlCar('6'),
+      ),
+    ).toEqual(['cab-start', null, 'cab-end', 'cab-start', null, 'cab-end']);
+  });
+
+  it('turns a power car and a control car at a coupling towards each other', () => {
+    expect(
+      shapes(powerCar('1'), coach('2', 'A'), controlCar('3'), powerCar('4'), coach('5', 'A')),
+    ).toEqual(['cab-start', null, 'cab-end', 'cab-start', null]);
+  });
+
+  it('turns a control car next to a locomotive towards it', () => {
+    expect(
+      shapes(
+        coach('1', 'A', { travelClass: 'none', features: ['locomotive'] }),
+        controlCar('2'),
+        coach('3', 'A'),
+        coach('4', 'A'),
+        coach('5', 'A'),
+      ),
+    ).toEqual(['locomotive', 'cab-start', null, null, null]);
+  });
+
+  it('turns a lone cab inside the train by the half of the train it stands in', () => {
+    expect(
+      shapes(controlCar('1'), coach('2', 'A'), coach('3', 'A'), controlCar('4'), coach('5', 'A')),
+    ).toEqual(['cab-start', null, null, 'cab-end', null]);
+  });
+
   it('shows no label on a power car even where it has a number', () => {
     const { container } = render(
       <TrainFormationDisplay

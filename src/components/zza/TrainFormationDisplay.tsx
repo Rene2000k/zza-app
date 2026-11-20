@@ -73,10 +73,10 @@ export const TrainFormationDisplay = ({
           data-section={coach.section}
           data-class={coach.travelClass}
           data-features={coach.features.join(' ')}
-          data-shape={shapeOf(coach, position, coaches.length)}
+          data-shape={shapeOf(coaches, position)}
           data-first-class-side={firstClassSideOf(coaches, position)}
         >
-          {edgesOf(shapeOf(coach, position, coaches.length)).map((edge) => (
+          {edgesOf(shapeOf(coaches, position)).map((edge) => (
             <Edge key={edge} edge={edge} />
           ))}
           {coachContent(coach, coachLabel)}
@@ -112,17 +112,29 @@ const sectionRuns = (coaches: readonly Coach[]) =>
  */
 type Shape = 'cab-start' | 'cab-end' | 'locomotive';
 
+/** A control car or power car: a vehicle with one cab, at the end it faces. */
+const hasOneCab = (coach: Coach | undefined): boolean =>
+  coach?.features.includes('controlCar') === true || coach?.features.includes('powerCar') === true;
+
+const hasCab = (coach: Coach | undefined): boolean =>
+  hasOneCab(coach) || coach?.features.includes('locomotive') === true;
+
 /**
- * A control car drives from the end of the train it stands at, so one in the front half faces
- * the start, one in the back half the end. A power car has its cab the same way and is drawn
- * alike.
+ * Which end a control car's or power car's cab faces. At either end of the train it faces
+ * outwards. Inside the train it stands at a coupling — two units, as in a double ICE 3, or a
+ * locomotive — and faces the one neighbour that has a cab itself. Where that does not tell, it
+ * faces the end of the half of the train it stands in.
  */
-const shapeOf = (coach: Coach, position: number, count: number): Shape | undefined => {
-  if (coach.features.includes('locomotive')) return 'locomotive';
-  if (!coach.features.includes('controlCar') && !coach.features.includes('powerCar')) {
-    return undefined;
-  }
-  return position < count / 2 ? 'cab-start' : 'cab-end';
+const shapeOf = (coaches: readonly Coach[], position: number): Shape | undefined => {
+  const coach = coaches[position];
+  if (coach?.features.includes('locomotive') === true) return 'locomotive';
+  if (!hasOneCab(coach)) return undefined;
+  if (position === 0) return 'cab-start';
+  if (position === coaches.length - 1) return 'cab-end';
+  const cabBefore = hasCab(coaches[position - 1]);
+  const cabAfter = hasCab(coaches[position + 1]);
+  if (cabBefore !== cabAfter) return cabBefore ? 'cab-start' : 'cab-end';
+  return position < coaches.length / 2 ? 'cab-start' : 'cab-end';
 };
 
 /**
