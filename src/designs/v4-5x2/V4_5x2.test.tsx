@@ -417,10 +417,15 @@ describe('V4 5X2 design', () => {
           id: 'x',
           formation: {
             accuracy: 'scheduled',
-            sections: ['A', 'B'],
             coaches: [
-              { number: '1', travelClass: 'first', features: [] },
-              { number: '2', travelClass: 'second', features: [] },
+              { number: '1', travelClass: 'first', section: 'A', lengthMetres: 26.4, features: [] },
+              {
+                number: '2',
+                travelClass: 'second',
+                section: 'B',
+                lengthMetres: 26.4,
+                features: [],
+              },
             ],
           },
         }),

@@ -28,27 +28,110 @@
   transform-origin: left center;
 }
 
-/* Coach-position display: section letters above, the coach strip below. */
+/*
+ * Wagenstandsanzeiger: one grid column per coach, all of equal width; the Bahnsteigabschnitt
+ * letters in the first row span the columns of their coaches, the coach boxes fill the second.
+ *
+ * A design sets the box width (--zza-formation-coach, a grid track size; by default the coaches
+ * share the width), the gap between boxes (--zza-formation-gap), how far in a cab end is cut
+ * (--zza-formation-cab) and how far a locomotive is slanted (--zza-formation-nose). A train wider
+ * than the field shrinks its boxes.
+ *
+ * A coach's shape (data-shape) is drawn in two parts: clip-path cuts the box, an svg line draws
+ * the cut's edge (.edge). The upright rest of a slanted end is the box's own border there, which
+ * a design that leaves out side borders must therefore keep for shaped boxes.
+ */
 .formation {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-content: center;
+  column-gap: var(--zza-formation-gap, 0.2em);
 }
 
-.sections,
-.coaches {
-  display: flex;
-}
-
-.sections > *,
-.coach {
-  flex: 1;
+.section {
+  grid-row: 1;
+  min-width: 0;
   text-align: center;
 }
 
-.coaches {
+.coach {
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
   border: var(--zza-formation-stroke) solid currentColor;
 }
 
-.coach + .coach {
-  border-left: var(--zza-formation-stroke) solid currentColor;
+/*
+ * A cab end is cut from the top corner down to 70 % of the height, as the reference displays
+ * draw a control car's front; below that the end stands upright. The cut's edge is the svg line.
+ */
+.coach[data-shape] {
+  position: relative;
+}
+
+.coach[data-shape='cab-start'] {
+  clip-path: polygon(var(--zza-formation-cab, 0.6em) 0, 100% 0, 100% 100%, 0 100%, 0 70%);
+}
+
+.coach[data-shape='cab-end'] {
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--zza-formation-cab, 0.6em)) 0,
+    100% 70%,
+    100% 100%,
+    0 100%
+  );
+}
+
+/*
+ * The line has to lie exactly on the cut, which is measured from the box's outer edge. An
+ * absolutely placed child is measured from inside the border, so it is moved out by the border —
+ * the top border, and the border of the slanted end, which a design must therefore draw — and
+ * its height is taken of the whole box, border included.
+ */
+.edge {
+  position: absolute;
+  top: calc(-1 * var(--zza-formation-stroke));
+  width: var(--zza-formation-cab, 0.6em);
+  height: calc(0.7 * (100% + 2 * var(--zza-formation-stroke)));
+  overflow: visible;
+  fill: none;
+}
+
+.edge[data-edge$='start'] {
+  left: calc(-1 * var(--zza-formation-stroke));
+}
+
+.edge[data-edge$='end'] {
+  right: calc(-1 * var(--zza-formation-stroke));
+}
+
+/*
+ * A locomotive is slanted at both ends towards the middle of its height, with a shorter slant
+ * than a cab (--zza-formation-nose).
+ */
+.coach[data-shape='locomotive'] {
+  clip-path: polygon(
+    var(--zza-formation-nose, 0.3em) 0,
+    calc(100% - var(--zza-formation-nose, 0.3em)) 0,
+    100% 50%,
+    calc(100% - var(--zza-formation-nose, 0.3em)) 100%,
+    var(--zza-formation-nose, 0.3em) 100%,
+    0 50%
+  );
+}
+
+.edge[data-edge^='nose'] {
+  width: var(--zza-formation-nose, 0.3em);
+  height: calc(100% + 2 * var(--zza-formation-stroke));
+}
+
+.edge polyline {
+  /* The edge's colour is the box outline's; a design that fills a box may set it apart. */
+  stroke: var(--zza-formation-edge, currentColor);
+  stroke-width: calc(2 * var(--zza-formation-stroke));
+  vector-effect: non-scaling-stroke;
 }
