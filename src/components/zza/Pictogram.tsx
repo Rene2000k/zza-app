@@ -12,7 +12,9 @@ export type PictogramId =
   /** A train — every service that is not an S-Bahn — before the train's name. */
   | 'train'
   /** An S-Bahn, before the line's name. */
-  | 'sBahn';
+  | 'sBahn'
+  /** A restaurant coach, in its box of the coach strip. */
+  | 'dining';
 
 export interface PictogramProps {
   readonly id: PictogramId;
@@ -118,6 +120,19 @@ const S_UPPER = 'M10.725 4.808A2.9 2.9 0 1 0 8 8.7L8 7.3A1.5 1.5 0 1 1 9.41 5.28
 const S_LOWER = 'M8 7.3A2.9 2.9 0 1 1 5.275 11.192L6.59 10.713A1.5 1.5 0 1 0 8 8.7Z';
 const S_BAHN = [SERVICE_RING, S_UPPER, S_LOWER].join('');
 
+/**
+ * Fork and knife, side by side and not touching: a fork of two prongs joined above its handle,
+ * and a knife whose blade swells out to the right before it narrows into the handle.
+ */
+const FORK = [
+  rect(0, 0, 1.2, 5),
+  rect(2.8, 0, 1.2, 5),
+  rect(0, 5, 4, 1.4),
+  rect(1.4, 6.4, 1.2, 9.6),
+];
+const KNIFE = 'M6 0C8.4 0.8 9.4 3 9.4 6V9H7.2V16H6Z';
+const CUTLERY = [...FORK, KNIFE].join('');
+
 const drawings: Record<PictogramId, Drawing> = {
   haltPlus: {
     label: 'Zusätzlicher Halt',
@@ -160,5 +175,11 @@ const drawings: Record<PictogramId, Drawing> = {
     width: 16,
     height: 16,
     path: S_BAHN,
+  },
+  dining: {
+    label: 'Restaurant',
+    width: 9.4,
+    height: 16,
+    path: CUTLERY,
   },
 };
