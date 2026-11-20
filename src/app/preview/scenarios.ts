@@ -1,5 +1,6 @@
 import { sortByPlannedTime } from '@/domain/boardEntry';
 import type { DepartureEntry, EntryTime, TerminatingArrivalEntry } from '@/domain/boardEntry';
+import type { Coach, CoachFeature } from '@/domain/formation';
 import type { StationRef } from '@/domain/station';
 import type { ReadyBoard, ZzaBoardViewModel } from '@/hooks/useZzaBoard';
 
@@ -257,11 +258,74 @@ const wholeStation = ready({
   ],
 });
 
+const coach = (
+  number: string | undefined,
+  travelClass: Coach['travelClass'],
+  section: string,
+  features: readonly CoachFeature[] = [],
+): Coach => ({
+  ...(number === undefined ? {} : { number }),
+  travelClass,
+  section,
+  lengthMetres: 26.4,
+  features,
+});
+
+/**
+ * An invented ICE with everything the Wagenstandsanzeiger draws: control cars at both ends, a
+ * restaurant, a coach of first class and restaurant, and first class filled.
+ */
+const iceWithFormation: DepartureEntry = departure({
+  id: 'ice-571-formation',
+  formation: {
+    accuracy: 'scheduled',
+    coaches: [
+      coach('1', 'second', 'A', ['controlCar']),
+      coach('2', 'second', 'A'),
+      coach('3', 'second', 'B'),
+      coach('4', 'second', 'B'),
+      coach('5', 'second', 'C'),
+      coach('6', 'none', 'C', ['dining']),
+      coach('7', 'first', 'D', ['dining']),
+      coach('8', 'mixed', 'D'),
+      coach('9', 'first', 'E', ['controlCar']),
+    ],
+  },
+});
+
+/** An invented locomotive-hauled regional train: the locomotive, then coaches and a control car. */
+const regionalWithLocomotive: DepartureEntry = departure({
+  id: 're-4168-formation',
+  train: { category: 'RE', number: '4168', line: 'RE60' },
+  destination: { name: 'Frankfurt(Main)Hbf' },
+  via: [{ name: 'Darmstadt Hbf' }],
+  formation: {
+    accuracy: 'scheduled',
+    coaches: [
+      coach(undefined, 'none', 'B', ['locomotive']),
+      coach('1', 'second', 'B'),
+      coach('2', 'second', 'C'),
+      coach('3', 'second', 'C'),
+      coach('4', 'mixed', 'D', ['controlCar']),
+    ],
+  },
+});
+
 export const previewScenarios: readonly PreviewScenario[] = [
   {
     id: 'regelbetrieb',
     name: 'Regelbetrieb',
     board: ready({ current: ice, following: [movedAway, cancelled, terminating] }),
+  },
+  {
+    id: 'wagenreihung',
+    name: 'Wagenreihung mit Steuerwagen',
+    board: ready({ current: iceWithFormation, following: [movedAway, cancelled] }),
+  },
+  {
+    id: 'wagenreihung-lok',
+    name: 'Wagenreihung mit Lok',
+    board: ready({ current: regionalWithLocomotive, following: [movedAway, cancelled] }),
   },
   {
     id: 'verspaetung',

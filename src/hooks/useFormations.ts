@@ -1,5 +1,6 @@
 import { useQueries } from '@tanstack/react-query';
 import { jitteredIntervalMs, seededUnit } from './useBoard';
+import { withSections } from '@/domain/formation';
 import type { StationBoard } from '@/domain/board';
 import type { BoardEntry, DepartureEntry } from '@/domain/boardEntry';
 import type { FormationProvider, FormationRequest } from '@/providers/types';
@@ -19,6 +20,9 @@ const requestFor = (entry: DepartureEntry, station: string): FormationRequest =>
  * handed on at once, and an entry gains its Wagenreihung once the provider has answered. Until
  * then, and whenever the provider has none or fails, the entry stays without one — the normal
  * case, which the Wagenstandsanzeiger shows as its idle state.
+ *
+ * A Wagenreihung joins its entry with a Bahnsteigabschnitt on every coach: the source's own
+ * where it gives them, the generic-platform fallback's otherwise (see `withSections`).
  *
  * Each Wagenreihung is asked again as often as the board is polled, because a tagesaktuelle
  * Wagenreihung can change while the train is on the board. How long an answer holds is the
@@ -58,7 +62,7 @@ export const useFormations = (
   const formationById = new Map(
     departures.flatMap((entry, index) => {
       const formation = answers[index]?.data;
-      return formation == null ? [] : [[entry.id, formation] as const];
+      return formation == null ? [] : [[entry.id, withSections(formation)] as const];
     }),
   );
   if (formationById.size === 0) return board;

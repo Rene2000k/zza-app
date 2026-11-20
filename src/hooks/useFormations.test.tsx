@@ -19,10 +19,15 @@ const board: StationBoard = {
 
 const ice571: TrainFormation = {
   coaches: [
-    { number: '1', travelClass: 'first', features: [] },
-    { number: '2', travelClass: 'second', features: ['bicycles'] },
+    { number: '1', travelClass: 'first', section: 'C', lengthMetres: 26.4, features: [] },
+    {
+      number: '2',
+      travelClass: 'second',
+      section: 'D',
+      lengthMetres: 26.4,
+      features: ['bicycles'],
+    },
   ],
-  sections: ['C', 'D'],
   accuracy: 'actual',
 };
 
@@ -125,6 +130,72 @@ describe('useFormations', () => {
     const { result } = renderFormations(createFormationProvider('none'));
 
     await waitFor(() => expect(result.current?.entries).toEqual(board.entries));
+  });
+
+  describe('without Bahnsteigabschnitte from the source', () => {
+    const unplaced = (count: number, lengthMetres: number): TrainFormation => ({
+      coaches: Array.from({ length: count }, (_, index) => ({
+        number: String(index + 1),
+        travelClass: 'second' as const,
+        lengthMetres,
+        features: [],
+      })),
+      accuracy: 'scheduled',
+    });
+
+    const sectionsFor = async (formation: TrainFormation) => {
+      const provider: FormationProvider = {
+        id: `answers-${formation.coaches.length}`,
+        name: 'Answers',
+        getFormation: (request) => Promise.resolve(isIce571(request) ? formation : null),
+      };
+      const { result } = renderFormations(provider);
+      await waitFor(() => expect(formationOf(result.current, 'mock-ice-571')).toBeDefined());
+      return formationOf(result.current, 'mock-ice-571')?.coaches.map((coach) => coach.section);
+    };
+
+    it('stands a long train centred on A–F, first coach at A', async () => {
+      // 12 × 28.8 m = 345.6 m on 400 m: 27.2 m free at each end, Abschnitte 66.7 m long.
+      expect(await sectionsFor(unplaced(12, 28.8))).toEqual([
+        'A',
+        'B',
+        'B',
+        'B',
+        'C',
+        'C',
+        'D',
+        'D',
+        'E',
+        'E',
+        'E',
+        'F',
+      ]);
+    });
+
+    it('lets a short train occupy fewer Bahnsteigabschnitte', async () => {
+      // 4 × 26.4 m = 105.6 m, centred: from 147.2 m to 252.8 m.
+      expect(await sectionsFor(unplaced(4, 26.4))).toEqual(['C', 'C', 'D', 'D']);
+    });
+
+    it('places all coaches anew when only some have a Bahnsteigabschnitt', async () => {
+      const partly: TrainFormation = {
+        coaches: unplaced(4, 26.4).coaches.map((coach, index) =>
+          index === 0 ? { ...coach, section: 'A' } : coach,
+        ),
+        accuracy: 'scheduled',
+      };
+      expect(await sectionsFor(partly)).toEqual(['C', 'C', 'D', 'D']);
+    });
+  });
+
+  it('passes a Wagenreihung with a Bahnsteigabschnitt on every coach unchanged', async () => {
+    const { provider } = fakeProvider();
+    const { result } = renderFormations(provider);
+
+    await waitFor(() => expect(formationOf(result.current, 'mock-ice-571')).toBeDefined());
+    expect(
+      formationOf(result.current, 'mock-ice-571')?.coaches.map((coach) => coach.section),
+    ).toEqual(['C', 'D']);
   });
 
   it('has no board to fill while none has arrived', () => {

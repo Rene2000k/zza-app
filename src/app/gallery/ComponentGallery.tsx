@@ -105,15 +105,20 @@ const messages: readonly BoardMessage[] = [
   { kind: 'info', text: 'Heute ohne Halt in Weinheim' },
 ];
 
-/** Invented, since no source delivers formations — only to show the block's populated state. */
+/** Invented, so the gallery shows the block's populated state without any source. */
 const formation: TrainFormation = {
-  sections: ['A', 'B', 'C', 'D'],
   coaches: [
-    { number: '11', travelClass: 'first', features: [] },
-    { number: '12', travelClass: 'first', features: [] },
-    { number: '13', travelClass: 'none', features: ['dining'] },
-    { number: '14', travelClass: 'second', features: [] },
-    { number: '15', travelClass: 'second', features: ['bicycles'] },
+    { number: '11', travelClass: 'first', section: 'A', lengthMetres: 26.4, features: [] },
+    { number: '12', travelClass: 'first', section: 'B', lengthMetres: 26.4, features: [] },
+    { number: '13', travelClass: 'none', section: 'B', lengthMetres: 26.4, features: ['dining'] },
+    { number: '14', travelClass: 'second', section: 'C', lengthMetres: 26.4, features: [] },
+    {
+      number: '15',
+      travelClass: 'second',
+      section: 'D',
+      lengthMetres: 26.4,
+      features: ['bicycles'],
+    },
   ],
   accuracy: 'scheduled',
 };

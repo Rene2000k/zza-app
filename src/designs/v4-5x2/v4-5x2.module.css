@@ -167,13 +167,65 @@
 
 /* Lower module row — the coach sequence above the rule. */
 
-.formation {
+/*
+ * The field the shared Wagenstandsanzeiger is set into. It starts under the time, not in the
+ * text column (see layout.md). Every coach is a box of the same width; a train too long for the
+ * field shrinks them.
+ *
+ * The rules below reach the coaches through the attributes the block puts on them
+ * (data-shape, data-class, data-features) — its own class names are private to it.
+ */
+.formationField {
   composes: cap16;
   position: absolute;
-  left: 344px;
+  left: 178px;
   top: 193px;
-  width: 716px;
-  height: 64px;
+  width: 882px;
+  height: 68px;
+  --zza-formation-coach: minmax(0, 61px);
+  --zza-formation-gap: 5px;
+  --zza-formation-cab: 24px;
+  --zza-formation-nose: 8px;
+}
+
+/*
+ * V4 draws a coach as two rules, above and below its number. A shaped end is closed: below a
+ * cab's cut, and at a locomotive's two points, the end is the box's own side border.
+ */
+.formationField [data-coach] {
+  border-left-width: 0;
+  border-right-width: 0;
+}
+
+.formationField [data-shape='cab-start'],
+.formationField [data-shape='locomotive'] {
+  border-left-width: var(--zza-formation-stroke);
+}
+
+.formationField [data-shape='cab-end'],
+.formationField [data-shape='locomotive'] {
+  border-right-width: var(--zza-formation-stroke);
+}
+
+/*
+ * First class is filled. A coach of first class and something else — second class, or a
+ * restaurant — is filled on its first-class half, the right one, and keeps its label on the left.
+ */
+.formationField [data-class='first'] {
+  --zza-formation-edge: var(--v4-ink);
+
+  border-color: var(--v4-ink);
+  background: var(--v4-ink);
+  color: var(--v4-lit);
+}
+
+.formationField [data-class='mixed'],
+.formationField [data-class='first'][data-features~='dining'] {
+  justify-content: flex-start;
+  padding-left: 6px;
+  /* Over the whole box, border included — tiled from inside it, the fill shows a seam. */
+  background: linear-gradient(90deg, transparent 50%, var(--v4-ink) 50%) border-box;
+  color: var(--v4-ink);
 }
 
 .rule {

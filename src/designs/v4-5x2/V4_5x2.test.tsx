@@ -410,6 +410,37 @@ describe('V4 5X2 design', () => {
     expect(container.querySelector('[data-state]')).toBeNull();
   });
 
+  it('numbers the coaches in the coach sequence', () => {
+    show(
+      ready({
+        current: departure({
+          id: 'x',
+          formation: {
+            accuracy: 'scheduled',
+            coaches: [
+              {
+                number: '21',
+                travelClass: 'first',
+                section: 'A',
+                lengthMetres: 26.4,
+                features: [],
+              },
+              {
+                number: '22',
+                travelClass: 'second',
+                section: 'B',
+                lengthMetres: 26.4,
+                features: [],
+              },
+            ],
+          },
+        }),
+      }),
+    );
+    expect(screen.getByText('21')).toBeDefined();
+    expect(screen.getByText('22')).toBeDefined();
+  });
+
   it('shows the coach sequence when there is one', () => {
     const container = show(
       ready({
@@ -417,10 +448,15 @@ describe('V4 5X2 design', () => {
           id: 'x',
           formation: {
             accuracy: 'scheduled',
-            sections: ['A', 'B'],
             coaches: [
-              { number: '1', travelClass: 'first', features: [] },
-              { number: '2', travelClass: 'second', features: [] },
+              { number: '1', travelClass: 'first', section: 'A', lengthMetres: 26.4, features: [] },
+              {
+                number: '2',
+                travelClass: 'second',
+                section: 'B',
+                lengthMetres: 26.4,
+                features: [],
+              },
             ],
           },
         }),

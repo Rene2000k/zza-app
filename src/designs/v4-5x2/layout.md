@@ -49,10 +49,21 @@ Lower module row, departure:
 
 | y       | Field                                                  |
 | ------- | ------------------------------------------------------ |
-| 193–257 | section letters and coach strip, only with a formation |
+| 193–261 | section letters and coach strip, only with a formation |
 | 273–275 | rule across the full width                             |
 | 275–313 | first following train                                  |
 | 313–351 | second following train                                 |
+
+The coach strip is not part of the text column. In the photograph of a train with an added stop
+(ICE 882 to Hamburg, 13 coaches) it runs from x 178 to 1060, starting under the time in module 0.
+A coach box there is 49 photo px wide with 4 px between boxes — 61 and 5 canvas px at that
+photograph's 1.25 canvas px per photo px. Second-class coaches are two rules, above and below the
+number; first class is filled, a coach of first class and a restaurant on its right half, with
+knife and fork on the left. A control car's cab end is cut from the top corner, 19 photo px
+(24 canvas px) in, down to about 70 % of the box height, and stands upright below that. A
+locomotive is a closed box without a label, slanted towards the middle of its height at both ends
+(photograph of RE 6 to Hamburg-Altona, slant about a fifth of the box height: 8 canvas px). The
+photograph also shows an arrow for the direction of travel left of the strip, not drawn yet.
 
 **A coupled train that is split ahead** (ADR-0014) puts its second part into the lower module
 row: its train on the left, its via stops in the text column at y 193, its destination below

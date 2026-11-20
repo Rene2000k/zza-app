@@ -13,8 +13,10 @@ describe('Pictogram', () => {
         <Pictogram id="clock" />
         <Pictogram id="train" />
         <Pictogram id="sBahn" />
+        <Pictogram id="dining" />
       </>,
     );
+    expect(screen.getByRole('img', { name: 'Restaurant' })).toBeDefined();
     expect(screen.getByRole('img', { name: 'Uhrzeit' })).toBeDefined();
     expect(screen.getByRole('img', { name: 'Zug' })).toBeDefined();
     expect(screen.getByRole('img', { name: 'S-Bahn' })).toBeDefined();

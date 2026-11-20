@@ -63,11 +63,18 @@ describe('display configuration', () => {
   });
 
   it('rejects an unknown Wagenreihung provider and names the available ones', () => {
-    const result = parseConfig('?station=8000105&formationProvider=fernbahn');
+    const result = parseConfig('?station=8000105&formationProvider=wagenwunder');
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.problems.join(' ')).toContain('„fernbahn“ gibt es nicht');
+    expect(result.problems.join(' ')).toContain('„wagenwunder“ gibt es nicht');
     expect(result.problems.join(' ')).toContain('none');
+  });
+
+  it('takes Wagenreihungen from the local fernbahn.de copy when told so', () => {
+    const result = parseConfig('?station=8000105&formationProvider=fernbahn-local');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.config.formationProvider).toBe('fernbahn-local');
   });
 
   it('round-trips through a share link', () => {
