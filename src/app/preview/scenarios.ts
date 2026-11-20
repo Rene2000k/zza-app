@@ -311,6 +311,27 @@ const regionalWithLocomotive: DepartureEntry = departure({
   },
 });
 
+/** An invented ICE with a power car at each end, drawn like control cars but without a number. */
+const iceWithPowerCars: DepartureEntry = departure({
+  id: 'ice-575-power-cars',
+  train: { category: 'ICE', number: '575' },
+  formation: {
+    accuracy: 'scheduled',
+    coaches: [
+      coach(undefined, 'none', 'A', ['powerCar']),
+      coach('1', 'second', 'A'),
+      coach('2', 'second', 'B'),
+      coach('3', 'second', 'B'),
+      coach('4', 'second', 'C'),
+      coach('5', 'none', 'C', ['dining']),
+      coach('6', 'mixed', 'D'),
+      coach('7', 'first', 'D'),
+      coach('8', 'first', 'E'),
+      coach(undefined, 'none', 'E', ['powerCar']),
+    ],
+  },
+});
+
 export const previewScenarios: readonly PreviewScenario[] = [
   {
     id: 'regelbetrieb',
@@ -321,6 +342,11 @@ export const previewScenarios: readonly PreviewScenario[] = [
     id: 'wagenreihung',
     name: 'Wagenreihung mit Steuerwagen',
     board: ready({ current: iceWithFormation, following: [movedAway, cancelled] }),
+  },
+  {
+    id: 'wagenreihung-triebkoepfe',
+    name: 'Wagenreihung mit Triebköpfen',
+    board: ready({ current: iceWithPowerCars, following: [movedAway, cancelled] }),
   },
   {
     id: 'wagenreihung-lok',

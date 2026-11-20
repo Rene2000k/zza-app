@@ -57,13 +57,17 @@ const coachOf = (
     .split('/')
     .map((use) => use.trim());
   const usesSet = new Set(uses);
-  // The UIC type code ("Bpmdzf") marks a coach with a driver's cab by its letter "f". A
-  // locomotive's own entry ("Triebkopf") is no control car, even where it has an "f".
-  const locomotive = usesSet.has('Lok');
-  const controlCar = !locomotive && textOf(element.querySelector('.wagen-gattung')).includes('f');
+  // A locomotive and a power car are both titled "Lok/Triebkopf"; the type code names the power
+  // car ("Triebkopf"). Otherwise the UIC type code ("Bpmdzf") marks a coach with a driver's cab
+  // by its letter "f" — but neither of the two is a control car, even where it has an "f".
+  const typeCode = textOf(element.querySelector('.wagen-gattung'));
+  const powerUnit = usesSet.has('Lok');
+  const powerCar = powerUnit && typeCode === 'Triebkopf';
+  const controlCar = !powerUnit && typeCode.includes('f');
   const features: CoachFeature[] = [
     ...(usesSet.has('Restaurant') ? (['dining'] as const) : []),
-    ...(locomotive ? (['locomotive'] as const) : []),
+    ...(powerUnit && !powerCar ? (['locomotive'] as const) : []),
+    ...(powerCar ? (['powerCar'] as const) : []),
     ...(controlCar ? (['controlCar'] as const) : []),
     ...(featuresByNumber.get(number) ?? []),
   ];

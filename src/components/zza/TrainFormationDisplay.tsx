@@ -21,9 +21,9 @@ export interface TrainFormationDisplayProps {
  * neither knows whether a source or the generic-platform fallback set them nor shows a
  * Bahnsteigabschnitt no coach stands in. Coaches without one are drawn without the letters.
  *
- * The shape is drawn here — the boxes, a control car's slanted front at the end its cab faces, a
- * locomotive slanted towards the middle at both ends, and knife and fork in place of a restaurant
- * coach's label. The
+ * The shape is drawn here — the boxes, a control car's or power car's slanted front at the end
+ * its cab faces, a locomotive slanted towards the middle at both ends, and knife and fork in place
+ * of a restaurant coach's label. The
  * look is the design's: each coach carries its class (`data-class`) and features
  * (`data-features`) for the design to fill or mark, and a part-first-class coach the end its
  * first-class half is at (`data-first-class-side`), where that can be told. Features are not drawn yet; they need
@@ -88,7 +88,7 @@ export const TrainFormationDisplay = ({
 
 /** What a coach box shows: knife and fork for a restaurant, otherwise the design's label. */
 const coachContent = (coach: Coach, coachLabel: 'class' | 'number') => {
-  if (coach.features.includes('locomotive')) return NO_TEXT;
+  if (coach.features.includes('locomotive') || coach.features.includes('powerCar')) return NO_TEXT;
   if (coach.features.includes('dining')) return <Pictogram id="dining" />;
   if (coachLabel === 'number') return coach.number ?? NO_TEXT;
   return classLabels[coach.travelClass];
@@ -114,11 +114,14 @@ type Shape = 'cab-start' | 'cab-end' | 'locomotive';
 
 /**
  * A control car drives from the end of the train it stands at, so one in the front half faces
- * the start, one in the back half the end.
+ * the start, one in the back half the end. A power car has its cab the same way and is drawn
+ * alike.
  */
 const shapeOf = (coach: Coach, position: number, count: number): Shape | undefined => {
   if (coach.features.includes('locomotive')) return 'locomotive';
-  if (!coach.features.includes('controlCar')) return undefined;
+  if (!coach.features.includes('controlCar') && !coach.features.includes('powerCar')) {
+    return undefined;
+  }
   return position < count / 2 ? 'cab-start' : 'cab-end';
 };
 

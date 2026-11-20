@@ -30,6 +30,8 @@ export type CoachFeature =
   | 'familyZone'
   | 'quietZone'
   | 'locomotive'
+  /** Triebkopf: the power unit at the end of a multiple unit such as ICE 1 or TGV, with a cab. */
+  | 'powerCar'
   | 'controlCar';
 
 export interface TrainFormation {

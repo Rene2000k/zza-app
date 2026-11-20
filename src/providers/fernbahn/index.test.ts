@@ -99,6 +99,19 @@ describe('createLocalFernbahnProvider', () => {
     expect(formation?.coaches.map((coach) => coach.number)).toEqual(['250']);
   });
 
+  // The directory titles both "Lok/Triebkopf"; only the type code tells them apart.
+  it('tells a power car from a locomotive', async () => {
+    servingDirectory();
+    const formation = await createLocalFernbahnProvider().getFormation(request('ICE', '4711'));
+
+    expect(formation?.coaches).toMatchObject([
+      { travelClass: 'none', features: ['powerCar'] },
+      { number: '41', features: [] },
+      { travelClass: 'none', features: ['powerCar'] },
+    ]);
+    expect(formation?.coaches[0]?.number).toBeUndefined();
+  });
+
   it('has none for a train the directory does not list', async () => {
     servingDirectory();
     const provider = createLocalFernbahnProvider();
