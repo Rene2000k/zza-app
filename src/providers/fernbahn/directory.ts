@@ -32,14 +32,17 @@ export const parseDirectory = (html: string): DirectoryEntry[] => {
 const textOf = (element: Element | null): string =>
   (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
-/** "ICE 600" — the category is the bold part, the number what follows it. */
+/**
+ * The category from the entry's `gattung_ice` class — the line itself shows some categories as
+ * a logo, not as text ("ICE 600", but an EuroCity logo before "1219") — and the number as the
+ * line's last word.
+ */
 const trainOf = (entry: Element) => {
-  const category = textOf(entry.querySelector('.zugnr strong'));
-  const match = /^(\S+) (\S+)$/.exec(textOf(entry.querySelector('.zugnr')));
-  if (category === '' || match?.[1] !== category || match?.[2] === undefined) {
-    return undefined;
-  }
-  return { category, number: match[2] };
+  const gattung = [...entry.classList].find((name) => name.startsWith('gattung_'));
+  const category = gattung?.slice('gattung_'.length).toUpperCase() ?? '';
+  const number = textOf(entry.querySelector('.zugnr')).split(' ').at(-1) ?? '';
+  if (category === '' || number === '') return undefined;
+  return { category, number };
 };
 
 const coachOf = (

@@ -92,6 +92,13 @@ describe('createLocalFernbahnProvider', () => {
     expect(ic?.coaches[0]?.number).toBeUndefined();
   });
 
+  it('reads the category of a train the directory shows with a logo', async () => {
+    servingDirectory();
+    const formation = await createLocalFernbahnProvider().getFormation(request('EC', '4321'));
+
+    expect(formation?.coaches.map((coach) => coach.number)).toEqual(['250']);
+  });
+
   it('has none for a train the directory does not list', async () => {
     servingDirectory();
     const provider = createLocalFernbahnProvider();
