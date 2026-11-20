@@ -25,7 +25,8 @@ export interface TrainFormationDisplayProps {
  * locomotive slanted towards the middle at both ends, and knife and fork in place of a restaurant
  * coach's label. The
  * look is the design's: each coach carries its class (`data-class`) and features
- * (`data-features`) for the design to fill or mark. Features are not drawn yet; they need
+ * (`data-features`) for the design to fill or mark, and a part-first-class coach the end its
+ * first-class half is at (`data-first-class-side`), where that can be told. Features are not drawn yet; they need
  * pictograms, not text.
  *
  * Without a formation it shows its defined idle state — an empty coach strip, as real displays
@@ -73,6 +74,7 @@ export const TrainFormationDisplay = ({
           data-class={coach.travelClass}
           data-features={coach.features.join(' ')}
           data-shape={shapeOf(coach, position, coaches.length)}
+          data-first-class-side={firstClassSideOf(coaches, position)}
         >
           {edgesOf(shapeOf(coach, position, coaches.length)).map((edge) => (
             <Edge key={edge} edge={edge} />
@@ -118,6 +120,38 @@ const shapeOf = (coach: Coach, position: number, count: number): Shape | undefin
   if (coach.features.includes('locomotive')) return 'locomotive';
   if (!coach.features.includes('controlCar')) return undefined;
   return position < count / 2 ? 'cab-start' : 'cab-end';
+};
+
+/**
+ * How much of a coach is first class: all of it, part of it (first and second class, or first
+ * class and a restaurant), or none.
+ */
+const firstClassShare = (coach: Coach | undefined): 'whole' | 'part' | 'none' => {
+  if (coach?.travelClass === 'mixed') return 'part';
+  if (coach?.travelClass !== 'first') return 'none';
+  return coach.features.includes('dining') ? 'part' : 'whole';
+};
+
+/**
+ * Which end a part-first-class coach has its first-class half at: towards the first class next
+ * to it, as on the real coaches, where the first-class compartments adjoin. A wholly first-class
+ * neighbour counts before a part-first-class one. Undefined where it cannot be told — no first
+ * class next to it, or as much on both sides — and for every other coach; the design then draws
+ * its default.
+ */
+const firstClassSideOf = (
+  coaches: readonly Coach[],
+  position: number,
+): 'start' | 'end' | undefined => {
+  if (firstClassShare(coaches[position]) !== 'part') return undefined;
+  const before = firstClassShare(coaches[position - 1]);
+  const after = firstClassShare(coaches[position + 1]);
+  for (const share of ['whole', 'part'] as const) {
+    if (before === share && after !== share) return 'start';
+    if (after === share && before !== share) return 'end';
+    if (before === share) return undefined;
+  }
+  return undefined;
 };
 
 /** The slanted edges a shape has, each drawn as a line of its own. */
