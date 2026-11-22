@@ -4,29 +4,132 @@ import type { Coach, CoachClass, CoachFeature } from '@/domain/formation';
 export interface DirectoryEntry {
   readonly category: string;
   readonly number: string;
+  /** The stations the variant starts and ends at, as the directory spells them. */
+  readonly origin: string;
+  readonly destination: string;
   /** Coach 1 first, as the directory lists them. */
   readonly coaches: readonly Coach[];
+  readonly validity: Validity;
+}
+
+/** When a variant runs, as its validity line states it. */
+export interface Validity {
+  /** First and last day, `YYYY-MM-DD`, both inclusive. */
+  readonly from: string;
+  readonly to: string;
+  /** The operating days, as `Date.getUTCDay()` numbers them: 0 is Sunday. */
+  readonly weekdays: ReadonlySet<number>;
 }
 
 /**
  * Reads the entries of a saved Reihungsverzeichnis page (the list view of the directory).
  *
  * Parsed with the runtime's DOMParser, as for IRIS (ADR-0007). DOMParser never throws on HTML;
- * a page that is not a directory page simply has no entries. Entries whose train cannot be read
- * are skipped rather than guessed.
+ * a page that is not a directory page simply has no entries. Entries whose train or validity
+ * cannot be read are skipped rather than guessed.
  */
 export const parseDirectory = (html: string): DirectoryEntry[] => {
   const doc = new DOMParser().parseFromString(html, 'text/html');
+  const year = timetableYearOf(doc);
   return [...doc.querySelectorAll('.reihungsverzeichnis-eintrag')].flatMap((entry) => {
     const train = trainOf(entry);
-    if (train === undefined) return [];
+    const validity = validityOf(entry.querySelector('.zugname'), year);
+    if (train === undefined || validity === undefined) return [];
     const lengthMetres = coachLength(textOf(entry.querySelector('.tfz')));
     const featuresByNumber = coachInfos(entry);
     const coaches = [...entry.querySelectorAll('.wagenreihung .wagen')].map((element) =>
       coachOf(element, lengthMetres, featuresByNumber),
     );
-    return [{ ...train, coaches }];
+    // "Musterstadt Hbf — Beispielburg"
+    const [origin = '', destination = ''] = textOf(entry.querySelector('.vonbis'))
+      .split('—')
+      .map((station) => station.trim());
+    return [{ ...train, origin, destination, coaches, validity }];
   });
+};
+
+/**
+ * The timetable year the page lists, as selected in its search form, with its first and last
+ * day. A timetable year runs from the second Sunday in December of the year before up to the
+ * Saturday before the second Sunday in December of its own year.
+ */
+const timetableYearOf = (doc: Document): Partial<Pick<Validity, 'from' | 'to'>> => {
+  const selected = doc.querySelector('select[name="fahrplan_jahr"] option[selected]');
+  const year = Number(selected?.getAttribute('value'));
+  // The form also offers a "Deutschlandtakt" pseudo-year, 9999.
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return {};
+  return {
+    from: isoDay(secondSundayOfDecember(year - 1)),
+    to: isoDay(new Date(secondSundayOfDecember(year).getTime() - DAY_MS)),
+  };
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const secondSundayOfDecember = (year: number): Date => {
+  const weekdayOfFirst = new Date(Date.UTC(year, 11, 1)).getUTCDay();
+  return new Date(Date.UTC(year, 11, 1 + ((7 - weekdayOfFirst) % 7) + 7));
+};
+
+const isoDay = (day: Date): string => day.toISOString().slice(0, 10);
+
+/**
+ * The first clause of the line under an entry: "Reihung gültig tgl 14.06.2026 bis 12.12.2026;
+ * Zug kommt als …". The dates are read from the `<time>` elements' machine-readable values. An
+ * open start or end — or no validity line at all — reaches to the edge of the timetable year;
+ * without a known timetable year such an entry has no validity that can be read. No validity
+ * line also means every day; operating days stated in any way other than `weekdaysOf` reads make
+ * the validity unreadable — they never count as daily.
+ */
+const validityOf = (
+  line: Element | null,
+  year: Partial<Pick<Validity, 'from' | 'to'>>,
+): Validity | undefined => {
+  // The line's text, each date replaced by its machine-readable value as "@YYYY-MM-DD".
+  const text = [...(line?.childNodes ?? [])]
+    .map((node) => {
+      if (!(node instanceof Element)) return node.textContent ?? '';
+      if (node.tagName === 'TIME') return ` @${node.getAttribute('datetime') ?? ''} `;
+      return node.classList.contains('reihungsverzeichnis-eintrag-zug-link')
+        ? ''
+        : (node.textContent ?? '');
+    })
+    .join('')
+    .replace(/\s+/g, ' ');
+  const clause = /Reihung gültig ([^;]*)/.exec(text)?.[1]?.trim();
+  const period = /(?:@(\S+) bis @(\S+)|ab @(\S+)|bis @(\S+))$/.exec(clause ?? '');
+  const from = period?.[1] ?? period?.[3] ?? year.from;
+  const to = period?.[2] ?? period?.[4] ?? year.to;
+  const weekdays =
+    clause === undefined
+      ? EVERY_DAY
+      : weekdaysOf(clause.slice(0, period?.index ?? clause.length).trim());
+  if (from === undefined || to === undefined || weekdays === undefined) return undefined;
+  return { from, to, weekdays };
+};
+
+/** The directory's weekday abbreviations, at the numbers `Date.getUTCDay()` gives the days. */
+const WEEK: readonly string[] = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+const EVERY_DAY: ReadonlySet<number> = new Set([0, 1, 2, 3, 4, 5, 6]);
+
+/**
+ * "tgl", or a list of days and ranges: "Mo-Fr, So", "Fr, Sa". Anything else is not understood
+ * and gives undefined.
+ */
+const weekdaysOf = (text: string): ReadonlySet<number> | undefined => {
+  if (text === 'tgl') return EVERY_DAY;
+  const weekdays = new Set<number>();
+  for (const item of text.split(',').map((part) => part.trim())) {
+    const [first, last = first, ...rest] = item.split('-').map((day) => WEEK.indexOf(day));
+    if (first === undefined || first === -1 || last === -1 || rest.length > 0) return undefined;
+    // A range runs forward through the week: "Mo-So" is all of it, "Fr-Mo" wraps over Sunday.
+    for (let day = first; ; day = (day + 1) % 7) {
+      weekdays.add(day);
+      if (day === last) break;
+    }
+  }
+  return weekdays;
 };
 
 const textOf = (element: Element | null): string =>
