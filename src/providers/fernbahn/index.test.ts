@@ -152,11 +152,10 @@ describe('createLocalFernbahnProvider', () => {
 });
 
 /**
- * Picking among the variants of one train number. Each page is built from invented entries in
- * the directory's markup; a variant is told by the number of its single coach.
+ * Pages built from invented entries in the directory's markup, for picking among the variants of
+ * one train number and for orienting the chosen one.
  */
-describe('createLocalFernbahnProvider — picking the variant', () => {
-  const page = (...entries: readonly string[]) => `<!doctype html>
+const page = (...entries: readonly string[]) => `<!doctype html>
     <html lang="de"><body>
       <form><select name="fahrplan_jahr" size="1">
         <option value="2027">2027</option>
@@ -166,64 +165,91 @@ describe('createLocalFernbahnProvider — picking the variant', () => {
       <section id="reihungsverzeichnis-liste">${entries.join('\n')}</section>
     </body></html>`;
 
-  const time = (iso: string) => {
-    const [year, month, day] = iso.split('-');
-    return `<time datetime="${iso}">${day}.${month}.${year}</time>`;
-  };
+const time = (iso: string) => {
+  const [year, month, day] = iso.split('-');
+  return `<time datetime="${iso}">${day}.${month}.${year}</time>`;
+};
 
-  /** "Reihung gültig tgl 01.03.2026 bis 31.03.2026" and its kin. */
-  const validity = ({
-    days = '<abbr title="täglich">tgl</abbr>',
-    from,
-    to,
-  }: {
-    days?: string;
-    from?: string;
-    to?: string;
-  }) => {
-    const period =
-      from !== undefined && to !== undefined
-        ? `${time(from)} bis ${time(to)}`
-        : from !== undefined
-          ? `ab ${time(from)}`
-          : to !== undefined
-            ? `bis ${time(to)}`
-            : '';
-    return `Reihung gültig ${days} ${period}`;
-  };
+/** "Reihung gültig tgl 01.03.2026 bis 31.03.2026" and its kin. */
+const validity = ({
+  days = '<abbr title="täglich">tgl</abbr>',
+  from,
+  to,
+}: {
+  days?: string;
+  from?: string;
+  to?: string;
+}) => {
+  const period =
+    from !== undefined && to !== undefined
+      ? `${time(from)} bis ${time(to)}`
+      : from !== undefined
+        ? `ab ${time(from)}`
+        : to !== undefined
+          ? `bis ${time(to)}`
+          : '';
+  return `Reihung gültig ${days} ${period}`;
+};
 
-  const variant = ({
-    coach,
-    number = '700',
-    origin = 'Musterstadt Hbf',
-    destination = 'Beispielburg',
-    valid = '',
-  }: {
-    coach: string;
-    number?: string;
-    origin?: string;
-    destination?: string;
-    valid?: string;
-  }) => `
+/**
+ * One route segment of the direction block: a left arrow before it says coach 1 is the
+ * Zugspitze, a right arrow after it says the last coach is.
+ */
+const segment = (from: string, to: string, front: 'coach 1' | 'last coach') =>
+  front === 'coach 1'
+    ? `<img src="images/pfeillinks.svg" alt="Pfeil Links" title="Pfeil Links" />&nbsp;${from} &ndash; ${to}`
+    : `${from} &ndash; ${to}&nbsp;<img src="images/pfeilrechts.svg" alt="Pfeil Rechts" title="Pfeil Rechts" />`;
+
+/** The direction block: the segments between Richtungswechsel stations, one per line. */
+const direction = (...segments: readonly string[]) =>
+  `<div class="richtungswechsel">${segments.map((line) => `${line}<br>`).join('')}</div>`;
+
+const variant = ({
+  coach,
+  coaches = [coach],
+  number = '700',
+  origin = 'Musterstadt Hbf',
+  destination = 'Beispielburg',
+  directions = direction(segment(origin, destination, 'coach 1')),
+  valid = '',
+}: {
+  coach: string;
+  coaches?: readonly string[];
+  number?: string;
+  origin?: string;
+  destination?: string;
+  directions?: string;
+  valid?: string;
+}) => `
     <div class="reihungsverzeichnis-eintrag gattung_ice">
       <div class="zugnr"><span><abbr title="InterCityExpress"><strong>ICE</strong></abbr> ${number}</span></div>
       <div class="vonbis">${origin} &mdash; ${destination}</div>
+      ${directions}
       <div class="tfz">ICE 3</div>
-      <div class="wagenreihung">
+      <div class="wagenreihung">${coaches
+        .map(
+          (coachNumber) => `
         <div class="wagen">
-          <span class="wagen-nummer">${coach}</span>
+          <span class="wagen-nummer">${coachNumber}</span>
           <a class="wagen-design wagen-innen" title="2. Klasse">&nbsp;</a>
           <span class="wagen-gattung">Bpmz</span>
-        </div>
+        </div>`,
+        )
+        .join('')}
       </div>
       <div class="zugname">${valid}
         <span class="reihungsverzeichnis-eintrag-zug-link"><a href="?zug_id=1">ansehen</a></span>
       </div>
     </div>`;
 
-  const serve = (...entries: readonly string[]) =>
-    serving(() => Promise.resolve(new Response(page(...entries), { status: 200 })));
+const serve = (...entries: readonly string[]) =>
+  serving(() => Promise.resolve(new Response(page(...entries), { status: 200 })));
 
+/**
+ * Picking among the variants of one train number; a variant is told by the number of its single
+ * coach.
+ */
+describe('createLocalFernbahnProvider — picking the variant', () => {
   const departing = (
     plannedDeparture: string,
     { origin = 'Musterstadt Hbf', destination = 'Beispielburg' } = {},
@@ -414,5 +440,89 @@ describe('createLocalFernbahnProvider — picking the variant', () => {
     expect(await chosen(departing('2025-12-14T10:00:00+01:00'))).toBe('1');
     expect(await chosen(departing('2026-12-12T10:00:00+01:00'))).toBe('1');
     expect(await chosen(departing('2026-12-13T10:00:00+01:00'))).toBeNull();
+  });
+});
+
+/**
+ * Orienting the Wagenreihung: a train that reverses in Frankfurt (Main) Hbf runs from Musterstadt
+ * Hbf to there coach 1 first, and on to Beispielburg with its last coach as the Zugspitze.
+ */
+describe('createLocalFernbahnProvider — orienting at the Richtungswechsel', () => {
+  const reversing = variant({
+    coach: '1',
+    coaches: ['1', '2', '3'],
+    directions: direction(
+      segment('Musterstadt Hbf', 'Frankfurt (Main) Hbf', 'coach 1'),
+      segment('Frankfurt (Main) Hbf', 'Beispielburg', 'last coach'),
+    ),
+  });
+
+  /** The coach numbers, Zugspitze first, of the train departing `station` towards `route`. */
+  const coachesFrom = async (station: string, route: readonly string[]) => {
+    const formation = await createLocalFernbahnProvider().getFormation({
+      train: { category: 'ICE', number: '700' },
+      plannedDeparture: new Date('2026-03-11T10:00:00+01:00'),
+      station,
+      origin: 'Musterstadt Hbf',
+      route,
+    });
+    return formation?.coaches.map((coach) => coach.number) ?? null;
+  };
+
+  it('gives the departing train its new Zugspitze at the Richtungswechsel station itself', async () => {
+    serve(reversing);
+
+    expect(await coachesFrom('Frankfurt(Main)Hbf', ['Zwischenhalt', 'Beispielburg'])).toEqual([
+      '3',
+      '2',
+      '1',
+    ]);
+  });
+
+  it('runs coach 1 first while the Richtungswechsel station is still ahead', async () => {
+    serve(reversing);
+
+    expect(await coachesFrom('Vorort', ['Frankfurt(Main)Hbf', 'Beispielburg'])).toEqual([
+      '1',
+      '2',
+      '3',
+    ]);
+  });
+
+  it('runs with the last coach first once the Richtungswechsel station is passed', async () => {
+    serve(reversing);
+
+    expect(await coachesFrom('Zwischenhalt', ['Beispielburg'])).toEqual(['3', '2', '1']);
+  });
+
+  it('keeps the order the arrow states for a train that never reverses', async () => {
+    const throughout = (front: 'coach 1' | 'last coach') =>
+      variant({
+        coach: '1',
+        coaches: ['1', '2'],
+        directions: direction(segment('Musterstadt Hbf', 'Beispielburg', front)),
+      });
+
+    serve(throughout('coach 1'));
+    expect(await coachesFrom('Musterstadt Hbf', ['Beispielburg'])).toEqual(['1', '2']);
+    serve(throughout('last coach'));
+    expect(await coachesFrom('Musterstadt Hbf', ['Beispielburg'])).toEqual(['2', '1']);
+  });
+
+  it('keeps the directory order when the remaining route matches no segment', async () => {
+    serve(reversing);
+
+    expect(await coachesFrom('Vorort', ['Anderswo', 'Fernhafen'])).toEqual(['1', '2', '3']);
+  });
+
+  it('keeps the directory order when the direction block is missing or unreadable', async () => {
+    const withDirections = (directions: string) =>
+      variant({ coach: '1', coaches: ['1', '2'], directions });
+
+    serve(withDirections(''));
+    expect(await coachesFrom('Vorort', ['Beispielburg'])).toEqual(['1', '2']);
+
+    serve(withDirections(direction('Musterstadt Hbf &ndash; Beispielburg')));
+    expect(await coachesFrom('Vorort', ['Beispielburg'])).toEqual(['1', '2']);
   });
 });

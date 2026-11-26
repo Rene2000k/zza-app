@@ -1,5 +1,5 @@
 import { parseDirectory } from './directory';
-import type { DirectoryEntry } from './directory';
+import type { DirectoryEntry, Segment } from './directory';
 import type { FormationProvider, FormationRequest } from '@/providers/types';
 
 /**
@@ -17,7 +17,10 @@ const DIRECTORY_URL = `${import.meta.env.BASE_URL}local-data/fernbahn-reihungsve
  * The file is read once and kept for the session — it changes per timetable year, not per poll.
  * Missing or unreadable, it counts as an empty directory: every request answers none.
  *
- * The coaches come in directory order, coach 1 first, without Bahnsteigabschnitte.
+ * The coaches come Zugspitze first, as they run on the departure's segment of the route (see
+ * `frontOf`), without Bahnsteigabschnitte. Where the segment cannot be told, they come in the
+ * directory's order, coach 1 first: the variant is still the right one, only its direction is
+ * not known.
  */
 export const createLocalFernbahnProvider = (): FormationProvider => {
   let directory: Promise<DirectoryEntry[]> | undefined;
@@ -31,10 +34,27 @@ export const createLocalFernbahnProvider = (): FormationProvider => {
     name: 'fernbahn.de (lokale Kopie)',
     getFormation: async (request) => {
       const entry = variantFor(request, await load());
-      return entry === undefined ? null : { coaches: entry.coaches, accuracy: 'scheduled' };
+      if (entry === undefined) return null;
+      const coaches =
+        frontOf(entry, request) === 'last' ? entry.coaches.toReversed() : entry.coaches;
+      return { coaches, accuracy: 'scheduled' };
     },
   };
 };
+
+/**
+ * Which end of the directory's coach order leads the departing train, or undefined when the
+ * segment it runs on cannot be told.
+ *
+ * The departure's remaining route decides, without the stops already passed: the train is on the
+ * first segment whose end station is still ahead. A Richtungswechsel station it departs from is
+ * no longer ahead — the route lists the stops after it — so it already runs on the segment after.
+ */
+const frontOf = (
+  { segments }: DirectoryEntry,
+  { route }: FormationRequest,
+): Segment['front'] | undefined =>
+  segments.find(({ to }) => route.some((stop) => sameStation(stop, to)))?.front;
 
 /**
  * The one variant that fits the departure, or none. A train number commonly has several, by
