@@ -10,6 +10,19 @@ export interface DirectoryEntry {
   /** Coach 1 first, as the directory lists them. */
   readonly coaches: readonly Coach[];
   readonly validity: Validity;
+  /**
+   * The route between Richtungswechsel stations, in travel order; a single segment for a train
+   * that never reverses. Empty when the entry's direction block cannot be read.
+   */
+  readonly segments: readonly Segment[];
+}
+
+/** A stretch of the route the train runs in one direction. */
+export interface Segment {
+  /** The station the segment ends at: a Richtungswechsel station, or the destination. */
+  readonly to: string;
+  /** Which coach of the directory's order is the Zugspitze on this segment. */
+  readonly front: 'first' | 'last';
 }
 
 /** When a variant runs, as its validity line states it. */
@@ -44,8 +57,50 @@ export const parseDirectory = (html: string): DirectoryEntry[] => {
     const [origin = '', destination = ''] = textOf(entry.querySelector('.vonbis'))
       .split('—')
       .map((station) => station.trim());
-    return [{ ...train, origin, destination, coaches, validity }];
+    const segments = segmentsOf(entry.querySelector('.richtungswechsel'));
+    return [{ ...train, origin, destination, coaches, validity, segments }];
   });
+};
+
+const ARROWS: Readonly<Record<string, Segment['front']>> = {
+  'Pfeil Links': 'first',
+  'Pfeil Rechts': 'last',
+};
+
+/**
+ * The direction block, one segment per line: "← Musterstadt Hbf – Wendeburg", then
+ * "Wendeburg – Beispielburg →". A left arrow means coach 1 is the Zugspitze, a right arrow the
+ * last coach. A line without exactly one known arrow or without its end station makes the whole
+ * block unreadable, and gives no segments at all rather than a partial route.
+ */
+const segmentsOf = (block: Element | null): Segment[] => {
+  const lines = linesOf(block).filter((line) => line.some((node) => !isBlank(node)));
+  const segments = lines.map(segmentOf);
+  return segments.every((segment) => segment !== undefined) ? segments : [];
+};
+
+/** The block's child nodes, split at each `<br>`. */
+const linesOf = (block: Element | null): Node[][] => {
+  const lines: Node[][] = [[]];
+  for (const node of block?.childNodes ?? []) {
+    if (node instanceof Element && node.tagName === 'BR') lines.push([]);
+    else lines.at(-1)?.push(node);
+  }
+  return lines;
+};
+
+const isBlank = (node: Node): boolean =>
+  !(node instanceof Element) && (node.textContent ?? '').trim() === '';
+
+const segmentOf = (line: readonly Node[]): Segment | undefined => {
+  const arrows = line.filter((node) => node instanceof Element && node.tagName === 'IMG');
+  const front =
+    arrows.length === 1 && arrows[0] instanceof Element
+      ? ARROWS[arrows[0].getAttribute('alt') ?? '']
+      : undefined;
+  const stations = line.map((node) => node.textContent ?? '').join('');
+  const to = stations.split('–').at(1)?.trim() ?? '';
+  return front === undefined || to === '' ? undefined : { to, front };
 };
 
 /**
