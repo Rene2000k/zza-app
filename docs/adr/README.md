@@ -24,6 +24,7 @@ only covers the mechanics.
 | [0014](0014-coupled-trains-are-linked-entries.md)                  | Coupled trains stay separate entries, linked from the source's `wings`           | accepted |
 | [0015](0015-coach-sequences-come-from-their-own-source.md)         | Wagenreihungen come from their own source, not from the departure provider       | accepted |
 | [0016](0016-bahnhoftafel-as-actual-wagenreihung-source.md)         | Tagesaktuelle Wagenreihungen come from the bahnhoftafel.de API                   | accepted |
+| [0017](0017-keyed-sources-go-through-the-vite-proxy.md)            | Sources that need a key go through a proxy in the Vite server                    | accepted |
 
 Keep this table in sync in the same commit that adds an ADR. Newest entries at the bottom.
 
