@@ -23,6 +23,7 @@ only covers the mechanics.
 | [0013](0013-pictograms-are-shared-vector-drawings.md)              | Pictograms are shared vector drawings, picked by id                              | accepted |
 | [0014](0014-coupled-trains-are-linked-entries.md)                  | Coupled trains stay separate entries, linked from the source's `wings`           | accepted |
 | [0015](0015-coach-sequences-come-from-their-own-source.md)         | Wagenreihungen come from their own source, not from the departure provider       | accepted |
+| [0016](0016-bahnhoftafel-as-actual-wagenreihung-source.md)         | Tagesaktuelle Wagenreihungen come from the bahnhoftafel.de API                   | accepted |
 
 Keep this table in sync in the same commit that adds an ADR. Newest entries at the bottom.
 
