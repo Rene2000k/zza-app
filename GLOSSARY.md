@@ -8,7 +8,8 @@ exactly one name in the code.
 ## Coach sequence
 
 **Wagenreihung**:
-The order of the coaches of one train, front first, with each coach's number, class and features.
+The order of the coaches of one train as they stand along the platform, from the end of
+Bahnsteigabschnitt A, with each coach's number, class and features.
 _Code_: `formation` (`TrainFormation`)
 
 **Wagenstandsanzeiger**:
@@ -22,6 +23,11 @@ _Code_: `section`
 **Zugspitze**:
 The end of the train that leads in its current direction of travel.
 _Code_: `front`
+
+**Fahrtrichtung**:
+The end of the platform the Zugspitze points to: the end of Bahnsteigabschnitt A, or the other one.
+Where a Wagenreihung is placed without a known platform, the Zugspitze stands at the end of A.
+_Code_: `directionOfTravel`
 
 **Richtungswechsel**:
 A stop where the train reverses, so that its former rear end becomes the Zugspitze.
